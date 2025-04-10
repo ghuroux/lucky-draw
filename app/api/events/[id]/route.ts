@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { EventStatus } from '@prisma/client';
+import { getUserRole } from '@/app/lib/auth';
 
 interface Params {
   params: {
@@ -8,10 +9,10 @@ interface Params {
   };
 }
 
-// GET /api/events/[id] - Get a specific event
+// GET /api/events/[id] - Retrieve a specific event
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const eventId = parseInt(params.id);
+    const eventId = Number(params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -20,8 +21,13 @@ export async function GET(req: NextRequest, { params }: Params) {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        entries: true,
-      },
+        packages: true,
+        entries: {
+          include: {
+            entrant: true
+          }
+        }
+      }
     });
     
     if (!event) {
@@ -32,69 +38,105 @@ export async function GET(req: NextRequest, { params }: Params) {
   } catch (error) {
     console.error('Error fetching event:', error);
     return NextResponse.json(
-      { error: 'An error occurred while fetching the event' },
+      { error: 'Failed to fetch event' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/events/[id] - Update an existing event
+// PUT /api/events/[id] - Update an event
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const eventId = parseInt(params.id);
+    // Check authentication
+    const role = await getUserRole();
+    if (!role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const eventId = Number(params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Find the event to check if it exists and its status
-    const existingEvent = await prisma.event.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id: eventId },
+      include: { packages: true }
     });
     
-    if (!existingEvent) {
+    if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
-    }
-    
-    // If event is not in DRAFT status, it cannot be edited
-    if (existingEvent.status !== EventStatus.DRAFT) {
-      return NextResponse.json(
-        { error: 'Cannot edit event that is not in DRAFT status' },
-        { status: 403 }
-      );
     }
     
     const data = await req.json();
     
-    // Validate required fields
-    if (!data.name) {
-      return NextResponse.json({ error: 'Event name is required' }, { status: 400 });
-    }
-    
-    if (!data.prizeName) {
-      return NextResponse.json({ error: 'Prize name is required' }, { status: 400 });
-    }
+    // Extract packages data
+    const { packages, ...eventData } = data;
     
     // Update the event
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: {
-        name: data.name,
-        description: data.description || '',
-        date: data.date ? new Date(data.date) : null,
-        drawTime: data.drawTime || '',
-        entryCost: parseFloat(data.entryCost) || 0,
-        numberOfWinners: parseInt(data.numberOfWinners) || 1,
-        prizeName: data.prizeName,
-        prizeDescription: data.prizeDescription || '',
+        name: eventData.name,
+        description: eventData.description,
+        date: eventData.date ? new Date(eventData.date) : null,
+        drawTime: eventData.drawTime,
+        entryCost: parseFloat(eventData.entryCost),
+        numberOfWinners: parseInt(eventData.numberOfWinners),
+        prizeName: eventData.prizeName,
+        prizeDescription: eventData.prizeDescription,
       },
     });
+    
+    // Handle packages update
+    if (packages && Array.isArray(packages)) {
+      // Get existing package IDs
+      const existingPackageIds = event.packages.map(pkg => pkg.id);
+      const updatedPackageIds: number[] = [];
+      
+      // Update or create packages
+      for (const pkg of packages) {
+        if (pkg.id) {
+          // Update existing package
+          const updatedPkg = await prisma.entryPackage.update({
+            where: { id: pkg.id },
+            data: {
+              quantity: parseInt(pkg.quantity),
+              cost: parseFloat(pkg.cost),
+              isActive: pkg.isActive
+            }
+          });
+          updatedPackageIds.push(updatedPkg.id);
+        } else {
+          // Create new package
+          const newPkg = await prisma.entryPackage.create({
+            data: {
+              eventId,
+              quantity: parseInt(pkg.quantity),
+              cost: parseFloat(pkg.cost),
+              isActive: pkg.isActive
+            }
+          });
+          updatedPackageIds.push(newPkg.id);
+        }
+      }
+      
+      // Delete packages that were removed
+      const packagesToDelete = existingPackageIds.filter(id => !updatedPackageIds.includes(id));
+      if (packagesToDelete.length > 0) {
+        await prisma.entryPackage.deleteMany({
+          where: {
+            id: { in: packagesToDelete }
+          }
+        });
+      }
+    }
     
     return NextResponse.json(updatedEvent);
   } catch (error) {
     console.error('Error updating event:', error);
     return NextResponse.json(
-      { error: 'An error occurred while updating the event' },
+      { error: 'Failed to update event' },
       { status: 500 }
     );
   }
@@ -103,32 +145,37 @@ export async function PUT(req: NextRequest, { params }: Params) {
 // DELETE /api/events/[id] - Delete an event
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const eventId = parseInt(params.id);
+    // Check authentication
+    const role = await getUserRole();
+    if (!role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const eventId = Number(params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Check if event exists
-    const existingEvent = await prisma.event.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id: eventId }
     });
     
-    if (!existingEvent) {
+    if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Delete all entries for this event first (to maintain referential integrity)
-    await prisma.entry.deleteMany({
-      where: { eventId }
-    });
+    // Check if the event is already drawn
+    if (event.status === 'DRAWN') {
+      return NextResponse.json({ error: 'Cannot delete an event after the draw has been performed' }, { status: 400 });
+    }
     
-    // Delete the event
+    // Delete the event and related packages (entries will cascade delete)
     await prisma.event.delete({
       where: { id: eventId }
     });
     
-    return NextResponse.json({ message: 'Event deleted successfully' });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting event:', error);
     return NextResponse.json(

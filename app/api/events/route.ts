@@ -1,6 +1,9 @@
+"use client";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { EventStatus } from '@prisma/client';
+import { getUserRole } from '@/app/lib/auth';
 
 // GET /api/events - Retrieve all events
 export async function GET(req: NextRequest) {
@@ -24,6 +27,12 @@ export async function GET(req: NextRequest) {
 // POST /api/events - Create a new event
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const role = await getUserRole();
+    if (!role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     const data = await request.json();
     
     // Validate required fields
@@ -35,21 +44,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prize name is required' }, { status: 400 });
     }
     
+    // Extract packages data
+    const { packages, ...eventData } = data;
+    
     // Create the event with initial status as DRAFT
     const event = await prisma.event.create({
       data: {
-        name: data.name,
-        description: data.description || '',
-        date: data.date ? new Date(data.date) : null,
-        drawTime: data.drawTime || '',
-        entryCost: parseFloat(data.entryCost) || 0,
-        numberOfWinners: parseInt(data.numberOfWinners) || 1,
-        prizeName: data.prizeName,
-        prizeDescription: data.prizeDescription || '',
+        name: eventData.name,
+        description: eventData.description || '',
+        date: eventData.date ? new Date(eventData.date) : null,
+        drawTime: eventData.drawTime || '',
+        entryCost: parseFloat(eventData.entryCost) || 0,
+        numberOfWinners: parseInt(eventData.numberOfWinners) || 1,
+        prizeName: eventData.prizeName,
+        prizeDescription: eventData.prizeDescription || '',
         status: EventStatus.DRAFT,
       },
     });
     
+    // Create packages if provided
+    if (packages && Array.isArray(packages) && packages.length > 0) {
+      await Promise.all(
+        packages.map(async (pkg: any) => {
+          if (pkg.quantity && pkg.cost !== undefined) {
+            await prisma.entryPackage.create({
+              data: {
+                eventId: event.id,
+                quantity: parseInt(pkg.quantity),
+                cost: parseFloat(pkg.cost),
+                isActive: pkg.isActive === true
+              }
+            });
+          }
+        })
+      );
+    }
+    
+    // Return the created event
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
     console.error('Error creating event:', error);

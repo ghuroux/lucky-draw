@@ -125,4 +125,86 @@ body {
            dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400;
     padding: 0.5rem 0.75rem;
   }
+
+  /* Form styling */
+  .form-container {
+    @apply bg-white shadow overflow-hidden sm:rounded-lg p-6 dark:bg-gray-800;
+  }
+
+  .form-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4;
+  }
+
+  .form-section {
+    @apply space-y-6;
+  }
+
+  .form-field {
+    @apply relative mb-4;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2;
+  }
+
+  .form-input {
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-3 px-4;
+  }
+
+  /* Width variants */
+  .form-input-short {
+    @apply w-32;
+  }
+
+  .form-input-medium {
+    @apply w-48;
+  }
+
+  .form-textarea {
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white min-h-[120px] py-3 px-4;
+  }
+
+  .form-select {
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-3 px-4;
+  }
+
+  .form-checkbox {
+    @apply h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded
+           dark:border-gray-600 dark:bg-gray-700;
+  }
+
+  .form-error {
+    @apply mt-2 text-sm text-red-600 dark:text-red-400;
+  }
+
+  .form-hint {
+    @apply mt-2 text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  .input-with-prefix {
+    @apply pl-8;
+  }
+
+  .input-prefix {
+    @apply absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 sm:text-sm;
+  }
+
+  .form-actions {
+    @apply flex justify-end space-x-3 pt-8 mt-6;
+  }
+
+  .form-submit-btn {
+    @apply inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-3 px-6 text-sm 
+           font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 
+           focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-200;
+  }
+
+  .form-cancel-btn {
+    @apply rounded-md border border-gray-300 bg-white py-3 px-6 text-sm font-medium text-gray-700 
+           shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 
+           focus:ring-offset-2 transition-colors duration-200;
+  }
 }

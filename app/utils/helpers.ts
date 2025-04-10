@@ -15,9 +15,9 @@ export function formatDate(dateString: string | null | undefined, includeTime = 
 export function formatCurrency(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) return 'N/A';
   
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'ZAR',
     minimumFractionDigits: 2,
   }).format(amount);
 }

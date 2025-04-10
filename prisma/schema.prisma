@@ -31,23 +31,39 @@ model AdminUser {
 }
 
 model Event {
-  id               Int         @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   name             String
   description      String?
   date             DateTime?
   drawTime         String?
-  entryCost        Float       @default(0)
-  numberOfWinners  Int         @default(1)
+  entryCost        Float         @default(0)
+  numberOfWinners  Int           @default(1)
   prizeName        String
   prizeDescription String?
-  status           EventStatus @default(DRAFT)
-  winnerId         String?     // This will store the Entry ID of the winning entry
+  status           EventStatus   @default(DRAFT)
+  winnerId         String?       // This will store the Entry ID of the winning entry
   drawnAt          DateTime?
   entries          Entry[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  packages         EntryPackage[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   
   @@map("events")
+}
+
+model EntryPackage {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      
+  quantity    Int      // Number of entries
+  cost        Float    // Total package cost
+  isActive    Boolean  @default(true)
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("entry_packages")
+  @@index([eventId])
 }
 
 model Entrant {
@@ -67,16 +83,20 @@ model Entrant {
 }
 
 model Entry {
-  id        String   @id @default(uuid())
-  eventId   Int
-  entrantId Int
-  createdAt DateTime @default(now())
+  id              String        @id @default(uuid())
+  eventId         Int
+  entrantId       Int
+  packageId       Int?          // Which package this came from (null for individual entries)
+  packageEntryNum Int?          // Position in the package (1-10 for a 10-pack)
+  createdAt       DateTime      @default(now())
   
   // Relations
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  entrant   Entrant  @relation(fields: [entrantId], references: [id])
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  entrant         Entrant       @relation(fields: [entrantId], references: [id])
+  package         EntryPackage? @relation(fields: [packageId], references: [id])
   
   @@map("entries")
   @@index([eventId])
   @@index([entrantId])
+  @@index([packageId])
 }
