@@ -23,8 +23,9 @@ npm install
 
 ## Step 3: Set Up Environment Variables
 
-Create a `.env.local` file in the root directory with the following variables:
+Create two environment files:
 
+1. `.env.local` for Next.js application:
 ```
 # Database connection
 DATABASE_URL="postgresql://username:password@localhost:5432/lucky_draw?schema=public"
@@ -34,9 +35,17 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+2. `.env` for Prisma CLI operations:
+```
+# Database connection (same as in .env.local)
+DATABASE_URL="postgresql://username:password@localhost:5432/lucky_draw?schema=public"
+```
+
 Replace:
 - `username`, `password` with your PostgreSQL credentials
 - `your_supabase_url` and `your_supabase_anon_key` with your Supabase project details
+
+> **Note**: Prisma CLI tools specifically look for `.env`, while Next.js uses `.env.local` at runtime. That's why we need both files with the database URL.
 
 ## Step 4: Create and Migrate the Database
 
