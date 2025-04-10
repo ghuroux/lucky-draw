@@ -17,7 +17,8 @@ export async function middleware(req: NextRequest) {
     // Check auth condition - only apply to protected routes
     const isProtectedRoute = req.nextUrl.pathname.startsWith('/dashboard') || 
                             req.nextUrl.pathname.startsWith('/events') ||
-                            req.nextUrl.pathname.startsWith('/entrants');
+                            req.nextUrl.pathname.startsWith('/entrants') ||
+                            req.nextUrl.pathname.startsWith('/leaderboard');
     
     if (isProtectedRoute && !session) {
       // Auth required, redirect to login
@@ -44,6 +45,7 @@ export const config = {
     '/dashboard/:path*',
     '/events/:path*',
     '/entrants/:path*',
+    '/leaderboard/:path*',
     '/api/admin/:path*'
   ],
 }; 

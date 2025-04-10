@@ -37,6 +37,15 @@ export default async function Dashboard() {
           <h2 className="text-xl font-semibold text-gray-800">Recent Events</h2>
           <div className="flex space-x-3">
             <Link
+              href="/leaderboard"
+              className="btn btn-secondary inline-flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+              </svg>
+              Leaderboard
+            </Link>
+            <Link
               href="/entrants"
               className="btn btn-secondary inline-flex items-center"
             >
@@ -108,7 +117,7 @@ export default async function Dashboard() {
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(event.eventDate ? event.eventDate.toString() : null)}
+                        {formatDate(event.date ? event.date.toString() : null)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatCurrency(event.entryCost)}
@@ -131,7 +140,7 @@ export default async function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {event.drawnAt ? event.winningEntryIds.length : event.numberOfWinners}
+                        {event.drawnAt ? (event.numberOfWinners) : event.numberOfWinners}
                         {!event.drawnAt && <span> (planned)</span>}
                       </td>
                     </tr>
