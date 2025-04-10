@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { User } from '@supabase/supabase-js';
+import { prisma } from './prisma';
 
 // Sign in with email and password
 export async function signInWithEmail(email: string, password: string) {
@@ -20,6 +21,25 @@ export async function signUpWithEmail(email: string, password: string) {
   });
   
   if (error) throw error;
+  
+  // Create AdminUser record if user was created successfully
+  if (data.user) {
+    try {
+      await prisma.adminUser.create({
+        data: {
+          id: data.user.id,
+          username: email,
+          passwordHash: "supabase_managed", // We don't need to store the password
+          role: "admin" // Default role for now
+        }
+      });
+    } catch (err) {
+      console.error("Error creating AdminUser record:", err);
+      // We don't throw here to avoid preventing sign up if DB record fails
+      // In a production app, you might want to handle this differently
+    }
+  }
+  
   return data;
 }
 
@@ -45,4 +65,16 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;
+}
+
+// Get the user's role from AdminUser table
+export async function getUserRole(): Promise<string | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  
+  const adminUser = await prisma.adminUser.findUnique({
+    where: { id: user.id }
+  });
+  
+  return adminUser?.role || null;
 } 

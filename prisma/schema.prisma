@@ -21,11 +21,13 @@ enum EventStatus {
 }
 
 model AdminUser {
-  id           Int      @id @default(autoincrement())
+  id           String   @id
   username     String   @unique
   passwordHash String
   role         String
   createdAt    DateTime @default(now())
+  
+  @@map("admin_users")
 }
 
 model Event {

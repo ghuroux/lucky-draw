@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/app/lib/auth';
 import { supabase } from '@/app/lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { useUserRole } from '@/app/hooks/useUserRole';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export default function AdminLayout({ children, title = 'Lucky Draw' }: AdminLay
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { role, isLoading: roleLoading } = useUserRole();
 
   // Load user on initial mount
   useEffect(() => {
@@ -129,9 +131,16 @@ export default function AdminLayout({ children, title = 'Lucky Draw' }: AdminLay
               {user && (
                 <div className="ml-3 relative">
                   <div className="flex items-center">
-                    <span className="mr-2 text-sm text-gray-700 truncate max-w-[150px]">
-                      {user.email}
-                    </span>
+                    <div className="mr-2 text-sm text-gray-700">
+                      <span className="truncate max-w-[150px]">
+                        {user.email}
+                      </span>
+                      {role && (
+                        <span className="ml-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          {role}
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={handleLogout}
                       className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
