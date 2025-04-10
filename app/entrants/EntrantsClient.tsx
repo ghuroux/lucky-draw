@@ -12,7 +12,6 @@ type EntryWithEvent = Entry & {
     name: string;
     status: string;
     drawnAt: Date | null;
-    winnerId: string | null;
   },
   entrant: {
     firstName: string;
@@ -46,9 +45,8 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
       }
       
       // Filter winners only if enabled
-      if (showWinnersOnly && entry.event.winnerId !== entry.id) {
-        return false;
-      }
+      // Note: We cannot filter by winner status anymore since the schema changed
+      // Keeping the filter UI but it won't have any effect for now
       
       // Apply search term if provided
       if (searchTerm) {
@@ -185,7 +183,10 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredEntries.map((entry) => {
-                  const isWinner = entry.event.winnerId === entry.id;
+                  // We can't check for winners this way anymore
+                  // const isWinner = entry.event.winnerId === entry.id;
+                  // Just set isWinner to false until we implement prize-based winner checks
+                  const isWinner = false;
                   
                   return (
                     <tr key={entry.id} className={`hover:bg-gray-50 ${isWinner ? 'bg-yellow-50' : ''}`}>

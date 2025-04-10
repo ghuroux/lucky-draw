@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerUserRole } from '@/app/lib/auth-server';
 import { prisma } from '@/app/lib/prisma';
-import { getUserRole } from '@/app/lib/auth';
 
 interface Params {
   params: {
@@ -11,8 +11,8 @@ interface Params {
 // GET /api/events/[id]/packages - Retrieve packages for an event
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    // Check authentication and authorization
-    const role = await getUserRole();
+    // Check authentication
+    const role = await getServerUserRole();
     if (!role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -42,8 +42,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 // POST /api/events/[id]/packages - Create a new package
 export async function POST(req: NextRequest, { params }: Params) {
   try {
-    // Check authentication and authorization
-    const role = await getUserRole();
+    // Check authentication
+    const role = await getServerUserRole();
     if (!role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -10,7 +10,11 @@ type EntryWithEvent = Entry & {
     name: string;
     status: string;
     drawnAt: Date | null;
-    winnerId: string | null;
+  },
+  entrant: {
+    firstName: string;
+    lastName: string;
+    email: string;
   }
 };
 
@@ -31,21 +35,17 @@ export default function ExportButton({ entries }: ExportButtonProps) {
         'Email',
         'Event',
         'Event Status',
-        'Date Entered',
-        'Is Winner'
+        'Date Entered'
       ];
       
       // Generate CSV rows
       const rows = entries.map(entry => {
-        const isWinner = entry.event.winnerId === entry.id;
-        
         return [
-          entry.name,
-          entry.email,
+          `${entry.entrant.firstName} ${entry.entrant.lastName}`,
+          entry.entrant.email,
           entry.event.name,
           entry.event.status,
-          formatDate(entry.createdAt.toString(), 'yyyy-MM-dd HH:mm:ss'),
-          isWinner ? 'Yes' : 'No'
+          formatDate(entry.createdAt.toString(), true)
         ];
       });
       
@@ -55,7 +55,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
         ...rows.map(row => 
           row.map(cell => 
             // Escape quotes and wrap cells with commas in quotes
-            cell.includes(',') || cell.includes('"') 
+            typeof cell === 'string' && (cell.includes(',') || cell.includes('"')) 
               ? `"${cell.replace(/"/g, '""')}"`
               : cell
           ).join(',')
@@ -67,7 +67,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `all-entrants-${formatDate(new Date().toString(), 'yyyy-MM-dd')}.csv`);
+      link.setAttribute('download', `all-entrants-${formatDate(new Date().toString(), true)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

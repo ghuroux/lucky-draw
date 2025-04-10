@@ -13,8 +13,7 @@ export default async function EntrantsPage() {
           id: true,
           name: true,
           status: true,
-          drawnAt: true,
-          winnerId: true
+          drawnAt: true
         }
       },
       entrant: {

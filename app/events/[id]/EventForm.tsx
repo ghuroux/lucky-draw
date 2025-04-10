@@ -14,6 +14,14 @@ interface PackageOption {
   isActive: boolean;
 }
 
+// Define prize type
+interface PrizeOption {
+  id?: number;
+  name: string;
+  description: string;
+  order: number;
+}
+
 interface EventFormProps {
   event: Event | null;
 }
@@ -28,16 +36,20 @@ export default function EventForm({ event }: EventFormProps) {
     date: event?.date ? formatISO(new Date(event.date), { representation: 'date' }) : '',
     drawTime: event?.drawTime || '',
     entryCost: event?.entryCost !== undefined ? event.entryCost.toString() : '0',
-    numberOfWinners: event?.numberOfWinners?.toString() || '1',
-    prizeName: event?.prizeName || '',
-    prizeDescription: event?.prizeDescription || '',
   });
 
   // Package state
   const [packages, setPackages] = useState<PackageOption[]>([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
   
+  // Prize state
+  const [prizes, setPrizes] = useState<PrizeOption[]>([
+    { name: '', description: '', order: 0 }
+  ]);
+  const [isLoadingPrizes, setIsLoadingPrizes] = useState(false);
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [prizeErrors, setPrizeErrors] = useState<Record<number, Record<string, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,6 +57,7 @@ export default function EventForm({ event }: EventFormProps) {
   useEffect(() => {
     if (event?.id) {
       fetchPackages(event.id);
+      fetchPrizes(event.id);
     } else {
       // Default packages for new events
       setPackages([
@@ -52,6 +65,8 @@ export default function EventForm({ event }: EventFormProps) {
         { quantity: 5, cost: 0, isActive: false },
         { quantity: 10, cost: 0, isActive: false }
       ]);
+      // Default single empty prize
+      setPrizes([{ name: '', description: '', order: 0 }]);
     }
   }, [event]);
 
@@ -81,31 +96,66 @@ export default function EventForm({ event }: EventFormProps) {
     }
   };
 
+  const fetchPrizes = async (eventId: number) => {
+    setIsLoadingPrizes(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/prizes`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0) {
+          setPrizes(data);
+        } else {
+          // If no prizes yet, create a default empty one
+          setPrizes([{ name: '', description: '', order: 0 }]);
+        }
+      } else {
+        setPrizes([{ name: '', description: '', order: 0 }]);
+      }
+    } catch (error) {
+      console.error('Error fetching prizes:', error);
+      setPrizes([{ name: '', description: '', order: 0 }]);
+    } finally {
+      setIsLoadingPrizes(false);
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const newPrizeErrors: Record<number, Record<string, string>> = {};
+    let hasErrors = false;
     
     if (!formData.name.trim()) {
       newErrors.name = 'Event name is required';
+      hasErrors = true;
     }
     
     if (!formData.date) {
       newErrors.date = 'Event date is required';
+      hasErrors = true;
     }
     
     if (!formData.entryCost || isNaN(parseFloat(formData.entryCost))) {
       newErrors.entryCost = 'Valid entry cost is required';
+      hasErrors = true;
     }
     
-    if (!formData.numberOfWinners || isNaN(parseInt(formData.numberOfWinners, 10)) || parseInt(formData.numberOfWinners, 10) < 1) {
-      newErrors.numberOfWinners = 'Number of winners must be at least 1';
-    }
-    
-    if (!formData.prizeName.trim()) {
-      newErrors.prizeName = 'Prize name is required';
-    }
+    // Validate each prize
+    prizes.forEach((prize, index) => {
+      const prizeError: Record<string, string> = {};
+      
+      if (!prize.name.trim()) {
+        prizeError.name = 'Prize name is required';
+        hasErrors = true;
+      }
+      
+      if (Object.keys(prizeError).length > 0) {
+        newPrizeErrors[index] = prizeError;
+      }
+    });
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setPrizeErrors(newPrizeErrors);
+    return !hasErrors;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -116,6 +166,31 @@ export default function EventForm({ event }: EventFormProps) {
     }));
   };
 
+  const handlePrizeChange = (index: number, field: keyof PrizeOption, value: string) => {
+    setPrizes(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      };
+      return updated;
+    });
+    
+    // Clear error if it exists
+    if (prizeErrors[index]?.[field]) {
+      setPrizeErrors(prev => {
+        const updated = { ...prev };
+        if (updated[index]) {
+          delete updated[index][field];
+          if (Object.keys(updated[index]).length === 0) {
+            delete updated[index];
+          }
+        }
+        return updated;
+      });
+    }
+  };
+
   const handlePackageChange = (index: number, field: keyof PackageOption, value: any) => {
     setPackages(prev => {
       const updated = [...prev];
@@ -124,6 +199,27 @@ export default function EventForm({ event }: EventFormProps) {
         [field]: field === 'cost' || field === 'quantity' ? parseFloat(value) : value
       };
       return updated;
+    });
+  };
+
+  const addPrize = () => {
+    setPrizes(prev => [
+      ...prev,
+      { name: '', description: '', order: prev.length }
+    ]);
+  };
+
+  const removePrize = (index: number) => {
+    setPrizes(prev => {
+      // Don't remove the last prize
+      if (prev.length <= 1) return prev;
+      
+      // Remove prize and update orders
+      const filtered = prev.filter((_, i) => i !== index);
+      return filtered.map((prize, i) => ({
+        ...prize,
+        order: i
+      }));
     });
   };
 
@@ -154,9 +250,12 @@ export default function EventForm({ event }: EventFormProps) {
       date: formData.date ? new Date(formData.date).toISOString() : null,
       drawTime: formData.drawTime,
       entryCost: parseFloat(formData.entryCost),
-      numberOfWinners: parseInt(formData.numberOfWinners, 10),
-      prizeName: formData.prizeName,
-      prizeDescription: formData.prizeDescription,
+      prizes: prizes.map((prize, index) => ({
+        id: prize.id,
+        name: prize.name,
+        description: prize.description,
+        order: index
+      })),
       packages: packages.map(pkg => ({
         id: pkg.id,
         quantity: pkg.quantity,
@@ -183,7 +282,17 @@ export default function EventForm({ event }: EventFormProps) {
         router.refresh();
       } else {
         const errorData = await response.json();
-        setServerError(errorData.error || 'An error occurred while saving the event');
+        // Handle the new structured error format
+        if (errorData.error && typeof errorData.error === 'object' && errorData.error.message) {
+          // Extract message from structured error object
+          setServerError(errorData.error.message);
+        } else if (errorData.error && typeof errorData.error === 'string') {
+          // Handle plain string error
+          setServerError(errorData.error);
+        } else {
+          // Fallback error message
+          setServerError('An error occurred while saving the event');
+        }
       }
     } catch (error) {
       console.error('Error saving event:', error);
@@ -287,8 +396,7 @@ export default function EventForm({ event }: EventFormProps) {
             />
           </div>
         </div>
-        
-        {/* Two column layout for cost/winners */}
+
         <div className="form-grid">
           {/* Entry Cost */}
           <div className="form-field">
@@ -312,100 +420,115 @@ export default function EventForm({ event }: EventFormProps) {
             </div>
             {errors.entryCost && <p className="form-error">{errors.entryCost}</p>}
           </div>
-          
-          {/* Number of Winners */}
-          <div className="form-field">
-            <label htmlFor="numberOfWinners" className="form-label">
-              Number of Winners *
-            </label>
-            <input
-              type="number"
-              min="1"
-              id="numberOfWinners"
-              name="numberOfWinners"
-              value={formData.numberOfWinners}
-              onChange={handleChange}
-              className={`form-input form-input-short ${errors.numberOfWinners ? 'border-red-300' : ''}`}
-            />
-            {errors.numberOfWinners && <p className="form-error">{errors.numberOfWinners}</p>}
-          </div>
         </div>
         
-        {/* Two column layout for prize info */}
-        <div className="form-grid">
-          {/* Prize Name */}
-          <div className="form-field">
-            <label htmlFor="prizeName" className="form-label">
-              Prize Name *
-            </label>
-            <input
-              type="text"
-              id="prizeName"
-              name="prizeName"
-              value={formData.prizeName}
-              onChange={handleChange}
-              className={`form-input ${errors.prizeName ? 'border-red-300' : ''}`}
-            />
-            {errors.prizeName && <p className="form-error">{errors.prizeName}</p>}
-          </div>
+        {/* Prizes Section */}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Prizes</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Add one or more prizes for this event. Each prize will have one winner.
+          </p>
           
-          {/* Prize Description */}
-          <div className="form-field">
-            <label htmlFor="prizeDescription" className="form-label">
-              Prize Description
-            </label>
-            <textarea
-              id="prizeDescription"
-              name="prizeDescription"
-              rows={3}
-              value={formData.prizeDescription}
-              onChange={handleChange}
-              className="form-textarea"
-            />
-          </div>
+          {prizes.map((prize, index) => (
+            <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-medium">Prize #{index + 1}</h4>
+                {prizes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removePrize(index)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              
+              <div className="form-grid">
+                {/* Prize Name */}
+                <div className="form-field">
+                  <label htmlFor={`prize-name-${index}`} className="form-label">
+                    Prize Name *
+                  </label>
+                  <input
+                    type="text"
+                    id={`prize-name-${index}`}
+                    value={prize.name}
+                    onChange={(e) => handlePrizeChange(index, 'name', e.target.value)}
+                    className={`form-input ${prizeErrors[index]?.name ? 'border-red-300' : ''}`}
+                  />
+                  {prizeErrors[index]?.name && <p className="form-error">{prizeErrors[index].name}</p>}
+                </div>
+                
+                {/* Prize Description */}
+                <div className="form-field">
+                  <label htmlFor={`prize-description-${index}`} className="form-label">
+                    Prize Description
+                  </label>
+                  <textarea
+                    id={`prize-description-${index}`}
+                    rows={2}
+                    value={prize.description}
+                    onChange={(e) => handlePrizeChange(index, 'description', e.target.value)}
+                    className="form-textarea"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          <button
+            type="button"
+            onClick={addPrize}
+            className="mt-2 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Add Another Prize
+          </button>
         </div>
 
         {/* Entry Packages Section */}
-        <div className="mt-8 mb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Entry Packages</h3>
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Entry Packages</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Configure packages for multiple entries at different price points.
+          </p>
           
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-            <div className="grid grid-cols-12 gap-3 mb-2 font-medium text-sm text-gray-700">
-              <div className="col-span-3">Package Size</div>
-              <div className="col-span-3">Price (R)</div>
-              <div className="col-span-3">Active</div>
-              <div className="col-span-3">Actions</div>
+          {isLoadingPackages ? (
+            <div className="text-center py-4">
+              <p>Loading packages...</p>
             </div>
-            
-            {isLoadingPackages ? (
-              <div className="py-4 text-center text-gray-500">Loading packages...</div>
-            ) : (
-              <div className="space-y-3">
+          ) : (
+            <div className="border border-gray-200 rounded-md overflow-hidden">
+              <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-2 border-b border-gray-200">
+                <div className="col-span-3 font-medium text-gray-500 text-sm">Entries</div>
+                <div className="col-span-3 font-medium text-gray-500 text-sm">Price (R)</div>
+                <div className="col-span-3 font-medium text-gray-500 text-sm">Active</div>
+                <div className="col-span-3 font-medium text-gray-500 text-sm">Actions</div>
+              </div>
+              <div className="divide-y divide-gray-200">
                 {packages.map((pkg, index) => (
                   <div key={index} className="grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-3">
+                    <div className="col-span-3 p-3">
                       <input
                         type="number"
                         min="1"
                         value={pkg.quantity}
                         onChange={(e) => handlePackageChange(index, 'quantity', e.target.value)}
-                        className="form-input"
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
-                    <div className="col-span-3">
-                      <div className="relative">
-                        <div className="input-prefix">
-                          <span>R</span>
-                        </div>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={pkg.cost}
-                          onChange={(e) => handlePackageChange(index, 'cost', e.target.value)}
-                          className="form-input input-with-prefix"
-                        />
-                      </div>
+                    <div className="col-span-3 p-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={pkg.cost}
+                        onChange={(e) => handlePackageChange(index, 'cost', e.target.value)}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
                     </div>
                     <div className="col-span-3">
                       <input
@@ -427,17 +550,17 @@ export default function EventForm({ event }: EventFormProps) {
                   </div>
                 ))}
               </div>
-            )}
-            
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={addPackage}
-                className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded border border-gray-300"
-              >
-                + Add Package
-              </button>
             </div>
+          )}
+          
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={addPackage}
+              className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded border border-gray-300"
+            >
+              + Add Package
+            </button>
           </div>
         </div>
         

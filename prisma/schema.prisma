@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
@@ -14,90 +8,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum EventStatus {
-  DRAFT
-  OPEN
-  CLOSED
-  DRAWN
-}
-
-model AdminUser {
+model admin_users {
   id           String   @id
   username     String   @unique
   passwordHash String
   role         String
   createdAt    DateTime @default(now())
-  
-  @@map("admin_users")
 }
 
-model Event {
-  id               Int           @id @default(autoincrement())
-  name             String
-  description      String?
-  date             DateTime?
-  drawTime         String?
-  entryCost        Float         @default(0)
-  numberOfWinners  Int           @default(1)
-  prizeName        String
-  prizeDescription String?
-  status           EventStatus   @default(DRAFT)
-  winnerId         String?       // This will store the Entry ID of the winning entry
-  drawnAt          DateTime?
-  entries          Entry[]
-  packages         EntryPackage[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  
-  @@map("events")
-}
-
-model EntryPackage {
-  id          Int      @id @default(autoincrement())
-  eventId     Int      
-  quantity    Int      // Number of entries
-  cost        Float    // Total package cost
-  isActive    Boolean  @default(true)
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  entries     Entry[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("entry_packages")
-  @@index([eventId])
-}
-
-model Entrant {
-  id          Int      @id @default(autoincrement())
+model entrants {
+  id          Int       @id @default(autoincrement())
   firstName   String
   lastName    String
-  email       String   @unique
+  email       String    @unique
   phone       String?
   dateOfBirth DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  entries     Entry[]
-  
-  @@map("entrants")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  entries     entries[]
 }
 
-model Entry {
-  id              String        @id @default(uuid())
+model entries {
+  id              String          @id
   eventId         Int
   entrantId       Int
-  packageId       Int?          // Which package this came from (null for individual entries)
-  packageEntryNum Int?          // Position in the package (1-10 for a 10-pack)
-  createdAt       DateTime      @default(now())
-  
-  // Relations
-  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  entrant         Entrant       @relation(fields: [entrantId], references: [id])
-  package         EntryPackage? @relation(fields: [packageId], references: [id])
-  
-  @@map("entries")
-  @@index([eventId])
+  createdAt       DateTime        @default(now())
+  packageEntryNum Int?
+  packageId       Int?
+  entrants        entrants        @relation(fields: [entrantId], references: [id])
+  events          events          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  entry_packages  entry_packages? @relation(fields: [packageId], references: [id])
+  prizes          prizes?
+
   @@index([entrantId])
+  @@index([eventId])
   @@index([packageId])
+}
+
+model entry_packages {
+  id        Int       @id @default(autoincrement())
+  eventId   Int
+  quantity  Int
+  cost      Float
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  entries   entries[]
+  events    events    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model events {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  date           DateTime?
+  drawTime       String?
+  entryCost      Float            @default(0)
+  status         EventStatus      @default(DRAFT)
+  drawnAt        DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  entries        entries[]
+  entry_packages entry_packages[]
+  prizes         prizes[]
+}
+
+model prizes {
+  id             Int      @id @default(autoincrement())
+  eventId        Int
+  name           String
+  description    String?
+  order          Int      @default(0)
+  winningEntryId String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  events         events   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  entries        entries? @relation(fields: [winningEntryId], references: [id])
+
+  @@index([eventId])
+}
+
+enum EventStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  DRAWN
 }

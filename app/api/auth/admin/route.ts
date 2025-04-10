@@ -4,6 +4,18 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import crypto from 'crypto';
 
+// Define the type for prisma with snake_case model names
+type PrismaWithSnakeCaseModels = typeof prisma & {
+  admin_users: {
+    findUnique: (args: { where: { id: string } | { username: string } }) => Promise<any>;
+    create: (args: { data: any }) => Promise<any>;
+    delete: (args: { where: { id: string } }) => Promise<any>;
+  }
+};
+
+// Cast prisma to use snake_case model names
+const prismaClient = prisma as PrismaWithSnakeCaseModels;
+
 // POST /api/auth/admin/register - Register a new admin user
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if username already exists
-    const existingUser = await prisma.adminUser.findUnique({
+    const existingUser = await prismaClient.admin_users.findUnique({
       where: { username }
     });
     
@@ -37,7 +49,7 @@ export async function POST(req: NextRequest) {
       .digest('hex');
     
     // Create the admin user in our database
-    const adminUser = await prisma.adminUser.create({
+    const adminUser = await prismaClient.admin_users.create({
       data: {
         username,
         passwordHash,
@@ -56,7 +68,7 @@ export async function POST(req: NextRequest) {
     
     if (error) {
       // If Supabase auth fails, delete the admin user from our database
-      await prisma.adminUser.delete({
+      await prismaClient.admin_users.delete({
         where: { id: adminUser.id }
       });
       
@@ -100,7 +112,7 @@ export async function PUT(req: NextRequest) {
       .digest('hex');
     
     // Find the admin user
-    const adminUser = await prisma.adminUser.findUnique({
+    const adminUser = await prismaClient.admin_users.findUnique({
       where: { username }
     });
     

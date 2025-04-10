@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import { formatDate, formatCurrency } from '@/app/utils/helpers';
 
 // Make this a server component
 export default async function Dashboard() {
-  // Fetch events directly using Prisma
-  const events = await prisma.event.findMany({
+  // Fetch events directly using db utility
+  const events = await db.event.findMany({
     orderBy: {
       createdAt: 'desc'
     },

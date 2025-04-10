@@ -1,7 +1,7 @@
 'use client';
 
 import { Entry } from '@prisma/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate } from '@/app/utils/helpers';
 
 interface EntriesListProps {
   entries: (Entry & {
@@ -47,7 +47,7 @@ export default function EntriesList({ entries, winnerId }: EntriesListProps) {
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                {formatDate(entry.createdAt.toString(), 'MMM d, h:mm a')}
+                {formatDate(entry.createdAt.toString(), true)}
               </div>
             </li>
           ))}

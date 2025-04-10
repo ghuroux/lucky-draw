@@ -1,12 +1,12 @@
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import Link from 'next/link';
 import { formatDate, formatCurrency } from '@/app/utils/helpers';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 
 export default async function EventsPage() {
-  // Fetch all events
-  const events = await prisma.event.findMany({
+  // Fetch all events using the db utility
+  const events = await db.event.findMany({
     include: {
       _count: {
         select: { entries: true }

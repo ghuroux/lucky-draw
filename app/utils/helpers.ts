@@ -1,14 +1,51 @@
 // Format a date string to a more readable format
-export function formatDate(dateString: string | null | undefined, includeTime = false): string {
+export function formatDate(
+  dateString: string | null | undefined, 
+  formatOrIncludeTime: boolean | string = false
+): string {
   if (!dateString) return 'Not set';
   
   const date = new Date(dateString);
   
-  if (includeTime) {
-    return date.toLocaleString();
+  // If formatOrIncludeTime is a boolean
+  if (typeof formatOrIncludeTime === 'boolean') {
+    if (formatOrIncludeTime) {
+      return date.toLocaleString();
+    }
+    return date.toLocaleDateString();
   }
   
-  return date.toLocaleDateString();
+  // If formatOrIncludeTime is a string format
+  try {
+    // Simple format handling for common patterns
+    switch (formatOrIncludeTime) {
+      case 'PPp': // Date and time: e.g., "Apr 29, 2021, 9:30 AM"
+        return date.toLocaleString(undefined, { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric'
+        });
+      case 'PP': // Date only: e.g., "Apr 29, 2021"
+        return date.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      case 'p': // Time only: e.g., "9:30 AM"
+        return date.toLocaleTimeString(undefined, {
+          hour: 'numeric',
+          minute: 'numeric'
+        });
+      default:
+        // If it's a custom format we don't handle yet, just use locale string
+        return date.toLocaleString();
+    }
+  } catch (e) {
+    // Fallback to default formatting
+    return date.toLocaleString();
+  }
 }
 
 // Format a currency amount

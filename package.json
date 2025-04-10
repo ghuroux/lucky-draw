@@ -6,14 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "auth:audit": "./auth-audit.sh",
+    "prisma:generate": "./generate-prisma.sh"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.6.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.6.3",
     "next": "15.2.5",
     "nodemailer": "^6.10.0",
     "phoenix": "^1.7.21",
