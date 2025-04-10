@@ -13,7 +13,11 @@ export default async function PastEventsPage() {
       status: EventStatus.DRAWN,
     },
     include: {
-      entries: true,
+      entries: {
+        include: {
+          entrant: true
+        }
+      },
       _count: {
         select: { entries: true }
       }
@@ -103,8 +107,8 @@ export default async function PastEventsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {winner ? (
                               <div>
-                                <p className="font-medium text-gray-900">{winner.name}</p>
-                                <p className="text-gray-500">{winner.email}</p>
+                                <p className="font-medium text-gray-900">{winner.entrant?.firstName} {winner.entrant?.lastName}</p>
+                                <p className="text-gray-500">{winner.entrant?.email}</p>
                               </div>
                             ) : (
                               <span className="text-gray-500">No winner selected</span>

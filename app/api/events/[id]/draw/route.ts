@@ -64,7 +64,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: {
-        winningEntryIds,
+        winnerId: winningEntries[0]?.id || null,
+        status: "DRAWN",
         drawnAt: new Date()
       }
     });

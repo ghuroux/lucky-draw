@@ -13,6 +13,11 @@ type EntryWithEvent = Entry & {
     status: string;
     drawnAt: Date | null;
     winnerId: string | null;
+  },
+  entrant: {
+    firstName: string;
+    lastName: string;
+    email: string;
   }
 };
 
@@ -49,8 +54,9 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         return (
-          entry.name.toLowerCase().includes(searchLower) ||
-          entry.email.toLowerCase().includes(searchLower) ||
+          entry.entrant.firstName.toLowerCase().includes(searchLower) ||
+          entry.entrant.lastName.toLowerCase().includes(searchLower) ||
+          entry.entrant.email.toLowerCase().includes(searchLower) ||
           entry.event.name.toLowerCase().includes(searchLower)
         );
       }
@@ -193,12 +199,12 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
                             </span>
                           )}
                           <div className="text-sm font-medium text-gray-900">
-                            {entry.name}
+                            {entry.entrant.firstName} {entry.entrant.lastName}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {entry.email}
+                        {entry.entrant.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link 

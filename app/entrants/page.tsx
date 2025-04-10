@@ -16,6 +16,13 @@ export default async function EntrantsPage() {
           drawnAt: true,
           winnerId: true
         }
+      },
+      entrant: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true
+        }
       }
     },
     orderBy: [

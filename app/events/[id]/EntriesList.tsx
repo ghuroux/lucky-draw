@@ -4,7 +4,13 @@ import { Entry } from '@prisma/client';
 import { formatDate } from '@/lib/utils';
 
 interface EntriesListProps {
-  entries: Entry[];
+  entries: (Entry & {
+    entrant: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    }
+  })[];
   winnerId?: string | null;
 }
 
@@ -36,8 +42,8 @@ export default function EntriesList({ entries, winnerId }: EntriesListProps) {
                   </span>
                 )}
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{entry.name}</p>
-                  <p className="text-sm text-gray-500">{entry.email}</p>
+                  <p className="text-sm font-medium text-gray-900">{entry.entrant.firstName} {entry.entrant.lastName}</p>
+                  <p className="text-sm text-gray-500">{entry.entrant.email}</p>
                 </div>
               </div>
               <div className="text-xs text-gray-500">

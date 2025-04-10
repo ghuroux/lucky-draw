@@ -99,7 +99,7 @@ export default function EventActions({ event }: EventActionsProps) {
           </button>
         )}
         
-        {event.status === 'CLOSED' && !event.hasWinner && (
+        {event.status === 'CLOSED' && !event.winnerId && (
           <button
             onClick={performDraw}
             disabled={isLoading}
@@ -109,7 +109,7 @@ export default function EventActions({ event }: EventActionsProps) {
           </button>
         )}
         
-        {event.hasWinner && (
+        {event.winnerId && (
           <div className="text-center py-2 text-green-600 font-medium">
             Winner has been drawn!
           </div>
@@ -120,7 +120,7 @@ export default function EventActions({ event }: EventActionsProps) {
             <strong>Current status:</strong> {event.status}
           </div>
           <div>
-            <strong>Winner drawn:</strong> {event.hasWinner ? 'Yes' : 'No'}
+            <strong>Winner drawn:</strong> {event.winnerId ? 'Yes' : 'No'}
           </div>
         </div>
       </div>

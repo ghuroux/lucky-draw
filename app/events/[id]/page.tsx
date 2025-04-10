@@ -26,7 +26,11 @@ export default async function EventPage({ params }: EventPageProps) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
     include: {
-      entries: true,
+      entries: {
+        include: {
+          entrant: true
+        }
+      }
     }
   });
   
