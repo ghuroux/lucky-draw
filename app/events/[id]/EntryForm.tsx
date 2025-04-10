@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EntryPackage } from '@prisma/client';
+
+// Use inline type definition instead of importing from Prisma
+interface EntryPackage {
+  id: number;
+  eventId: number;
+  quantity: number;
+  cost: number;
+  isActive: boolean;
+}
 
 interface EntryFormProps {
   eventId: number;

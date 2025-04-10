@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+// Define types locally to avoid import issues
+interface EntryPackage {
+  id: number;
+  eventId: number;
+  quantity: number;
+  cost: number;
+  isActive: boolean;
+}
+
 interface Params {
   params: {
     id: string;
   };
+}
+
+interface EntryRequestData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: string | null;
+  packageId?: number | null;
 }
 
 // GET /api/events/[id]/entries - Get all entries for an event
@@ -16,15 +34,34 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Get all entries for the event
+    // Get all entries for the event with related data
     const entries = await prisma.entry.findMany({
       where: { eventId },
       include: {
-        entrant: true,
-        package: true
+        entrant: true
       },
       orderBy: { createdAt: 'desc' }
     });
+    
+    // If needed, fetch packages separately and merge them
+    const entriesWithPackageIds = entries.filter(entry => entry.packageId !== null);
+    if (entriesWithPackageIds.length > 0) {
+      const packageIds = [...new Set(entriesWithPackageIds.map(entry => entry.packageId))];
+      const packages = await prisma.entryPackage.findMany({
+        where: { id: { in: packageIds as number[] } }
+      });
+      
+      // Return enriched entries with package data
+      const enrichedEntries = entries.map(entry => {
+        if (entry.packageId) {
+          const entryPackage = packages.find(pkg => pkg.id === entry.packageId);
+          return { ...entry, package: entryPackage || null };
+        }
+        return { ...entry, package: null };
+      });
+      
+      return NextResponse.json(enrichedEntries);
+    }
     
     return NextResponse.json(entries);
   } catch (error) {
@@ -61,7 +98,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
     
-    const data = await request.json();
+    const data = await request.json() as EntryRequestData;
     
     // Validate required fields
     if (!data.firstName || !data.lastName || !data.email) {
@@ -73,16 +110,18 @@ export async function POST(request: NextRequest, { params }: Params) {
     
     // Check if we're using a package
     const packageId = data.packageId ? Number(data.packageId) : null;
-    let entryPackage = null;
+    let entryPackage: EntryPackage | null = null;
     
     if (packageId) {
-      entryPackage = await prisma.entryPackage.findUnique({
+      const foundPackage = await prisma.entryPackage.findUnique({
         where: { id: packageId }
       });
       
-      if (!entryPackage) {
+      if (!foundPackage) {
         return NextResponse.json({ error: 'Package not found' }, { status: 404 });
       }
+      
+      entryPackage = foundPackage;
       
       if (!entryPackage.isActive) {
         return NextResponse.json({ error: 'Selected package is not active' }, { status: 400 });
@@ -124,16 +163,15 @@ export async function POST(request: NextRequest, { params }: Params) {
     
     if (packageId && entryPackage) {
       // Create multiple entries for the package
-      const entriesPromises = Array.from({ length: entryPackage.quantity }).map((_, index) => {
-        return prisma.entry.create({
+      for (let i = 0; i < entryPackage.quantity; i++) {
+        const entry = await prisma.entry.create({
           data: {
             ...createEntryData,
-            packageEntryNum: index + 1
+            packageEntryNum: i + 1
           }
         });
-      });
-      
-      entries = await Promise.all(entriesPromises);
+        entries.push(entry);
+      }
     } else {
       // Create a single entry
       const entry = await prisma.entry.create({
