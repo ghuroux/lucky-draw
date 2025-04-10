@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  DRAWN
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+}
+
+model Event {
+  id               Int         @id @default(autoincrement())
+  name             String
+  description      String?
+  date             DateTime?
+  drawTime         String?
+  entryCost        Float       @default(0)
+  numberOfWinners  Int         @default(1)
+  prizeName        String
+  prizeDescription String?
+  status           EventStatus @default(DRAFT)
+  winnerId         String?     // This will store the Entry ID of the winning entry
+  drawnAt          DateTime?
+  entries          Entry[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  @@map("events")
+}
+
+model Entrant {
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?
+  dateOfBirth DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  entries     Entry[]
+  
+  @@map("entrants")
+}
+
+model Entry {
+  id        String   @id @default(uuid())
+  eventId   Int
+  entrantId Int
+  createdAt DateTime @default(now())
+  
+  // Relations
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  entrant   Entrant  @relation(fields: [entrantId], references: [id])
+  
+  @@map("entries")
+  @@index([eventId])
+  @@index([entrantId])
+}
