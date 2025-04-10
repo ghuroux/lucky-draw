@@ -4,11 +4,13 @@ A web application for managing monthly lucky draws for golf day charity events.
 
 ## Features
 
-- Admin authentication with secure login
+- Admin authentication with secure login via Supabase Auth
+- Role-based access control for administrators
 - Event management (create, update, delete events)
 - Entry management (add and manage participant entries)
 - Automated random draw with winner selection
 - Detailed reporting and history
+- Leaderboard showing top participants
 
 ## Tech Stack
 
@@ -16,7 +18,7 @@ A web application for managing monthly lucky draws for golf day charity events.
 - **Backend**: Next.js API routes
 - **Database**: PostgreSQL managed via Supabase
 - **ORM**: Prisma
-- **Authentication**: Supabase Auth
+- **Authentication**: Supabase Auth with custom role management
 - **Email**: NodeMailer
 - **Deployment**: Vercel
 
@@ -34,7 +36,16 @@ A web application for managing monthly lucky draws for golf day charity events.
    ```bash
    npm install
    ```
-3. Update the `.env` file with your Supabase connection details and other required environment variables
+3. Create a `.env` file for Prisma CLI operations:
+   ```
+   DATABASE_URL="postgresql://username:password@localhost:5432/lucky_draw?schema=public"
+   ```
+4. Create a `.env.local` file for the Next.js application:
+   ```
+   DATABASE_URL="postgresql://username:password@localhost:5432/lucky_draw?schema=public"
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
 ### Database Setup
 
@@ -57,6 +68,50 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Authentication and Role Management
+
+The application uses Supabase Authentication together with a custom role management system:
+
+### User Signup Flow
+1. Users sign up using Supabase Auth
+2. An AdminUser record is automatically created with the Supabase UUID as the primary key
+3. Default role "admin" is assigned to new users
+
+### Role-Based Access Control
+
+#### Using the useUserRole Hook
+```tsx
+const { role, isAdmin, isLoading } = useUserRole();
+
+if (isAdmin) {
+  // Admin-specific UI or logic
+}
+```
+
+#### Using the RoleProtected Component
+```tsx
+<RoleProtected allowedRoles={['admin']}>
+  <AdminOnlyComponent />
+</RoleProtected>
+```
+
+#### API Route Protection
+```typescript
+import { getUserRole } from '@/app/lib/auth';
+
+export async function POST(req: Request) {
+  const role = await getUserRole();
+  
+  if (role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+      status: 403 
+    });
+  }
+  
+  // Process admin-only request
+}
+```
+
 ## Project Structure
 
 - `/app`: Next.js application routes and components
@@ -65,7 +120,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
   - `/components`: Reusable UI components
   - `/dashboard`: Admin dashboard pages
   - `/events`: Event management pages
-  - `/lib`: Utility libraries (Prisma client, Supabase client)
+  - `/hooks`: Custom React hooks
+  - `/lib`: Utility libraries (Prisma client, Supabase client, Auth)
   - `/types`: TypeScript type definitions
   - `/utils`: Helper functions
 
@@ -82,8 +138,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - `GET /api/entries/:id`: Get a specific entry
 - `PUT /api/entries/:id`: Update an entry
 - `DELETE /api/entries/:id`: Delete an entry
-- `POST /api/auth/admin`: Register a new admin user
-- `PUT /api/auth/admin`: Login an admin user
 
 ## License
 
