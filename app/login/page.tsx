@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmail } from '@/app/lib/auth';
+import { signIn } from '@/app/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +21,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signInWithEmail(email, password);
+      await signIn(email, password);
+      
+      // Sync admin user record after successful login
+      try {
+        await fetch('/api/auth/admin-sync', { method: 'POST' });
+      } catch (syncError) {
+        console.error('Error syncing admin user:', syncError);
+        // Continue with login flow even if sync fails
+      }
+      
       router.push(redirectTo);
       router.refresh();
     } catch (err) {

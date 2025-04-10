@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signUpWithEmail } from '@/app/lib/auth';
+import { signUp } from '@/app/lib/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -35,10 +35,19 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const { user } = await signUpWithEmail(email, password);
+      const { user } = await signUp(email, password);
       
       if (user) {
         // If user is immediately confirmed (auto-confirm is enabled)
+        
+        // Sync admin user record after successful signup
+        try {
+          await fetch('/api/auth/admin-sync', { method: 'POST' });
+        } catch (syncError) {
+          console.error('Error syncing admin user:', syncError);
+          // Continue with signup flow even if sync fails
+        }
+        
         router.push('/dashboard');
       } else {
         // If email confirmation is required

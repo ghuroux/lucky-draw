@@ -1,10 +1,11 @@
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-} 
+// This client is safe to use in browser components - it automatically uses cookies for auth
+export const createBrowserClient = () => {
+  return createClientComponentClient();
+}
+
+// Use this in client components
+export const supabaseBrowser = createBrowserClient(); 
