@@ -1,15 +1,6 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServerSupabase } from './supabase-server';
 import { prisma } from './prisma';
 import { cache } from 'react';
-
-/**
- * Get supabase instance for server components
- */
-export const createServerSupabase = cache(() => {
-  const cookieStore = cookies();
-  return createServerComponentClient({ cookies: () => cookieStore });
-});
 
 /**
  * Get current session data from supabase (server-side)
@@ -53,7 +44,7 @@ export async function createAdminUser(userId: string, email: string) {
 
 // Get the current user in a server component
 export async function getServerUser() {
-  const supabase = await createServerSupabase();
+  const supabase = createServerSupabase();
   const { data } = await supabase.auth.getUser();
   return data?.user;
 }
