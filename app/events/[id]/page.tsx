@@ -32,7 +32,10 @@ export default async function EventPage({ params }: EventPageProps) {
       include: {
         entries: {
           include: {
-            entrants: true  // Changed from entrant to entrants (snake_case model name)
+            entrants: true,
+            event: true,
+            entry_packages: true,
+            prizes: true
           }
         },
         // Only include packages if using entry packages
@@ -133,7 +136,9 @@ export default async function EventPage({ params }: EventPageProps) {
               
               {/* Prize Display */}
               <div className="mt-8">
-                <PrizeDisplay eventId={eventId} isDrawn={isEventDrawn} />
+                {event.prizes.map(prize => (
+                  <PrizeDisplay key={prize.id} prize={prize} />
+                ))}
               </div>
               
               {/* Draw Results - shown only for drawn events */}

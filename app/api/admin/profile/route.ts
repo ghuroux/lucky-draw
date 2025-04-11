@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 
 // Protected route to get user profile 
 export async function GET(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const userEmail = session.user.email;
     
     // Example: Get user events from Prisma
-    const userEvents = await prisma.event.findMany({
+    const userEvents = await db.event.findMany({
       where: {
         entries: {
           some: {

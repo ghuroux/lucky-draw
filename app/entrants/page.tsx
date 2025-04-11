@@ -1,4 +1,4 @@
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import Link from 'next/link';
@@ -6,31 +6,20 @@ import EntrantsClient from './EntrantsClient';
 
 export default async function EntrantsPage() {
   // Fetch all entries with their related events
-  const entries = await prisma.entry.findMany({
+  const entries = await db.entry.findMany({
     include: {
-      event: {
+      events: {
         select: {
-          id: true,
           name: true,
-          status: true,
-          drawnAt: true
+          date: true
         }
       },
-      entrant: {
-        select: {
-          firstName: true,
-          lastName: true,
-          email: true
-        }
-      }
-    },
-    orderBy: [
-      { createdAt: 'desc' }
-    ]
+      entrants: true
+    }
   });
 
   // Fetch all events for the filter dropdown
-  const events = await prisma.event.findMany({
+  const events = await db.event.findMany({
     select: {
       id: true,
       name: true,
