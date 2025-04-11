@@ -17,20 +17,22 @@ interface EventPageProps {
 }
 
 export default async function EventPage({ params }: EventPageProps) {
-  const eventId = parseInt(params.id);
+  // Always await params when using dynamic route parameters
+  const { id } = await params;
+  const eventId = parseInt(id);
   
   if (isNaN(eventId)) {
     notFound();
   }
   
   try {
-    // Fetch event data using the db utility
+    // Fetch event data using the db utility with correct relation names
     const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         entries: {
           include: {
-            entrant: true
+            entrants: true  // Changed from entrant to entrants (snake_case model name)
           }
         },
         // Only include packages if using entry packages
@@ -57,9 +59,9 @@ export default async function EventPage({ params }: EventPageProps) {
     const formattedEntries = event.entries.map(entry => ({
       ...entry,
       entrant: {
-        firstName: entry.entrant.firstName,
-        lastName: entry.entrant.lastName,
-        email: entry.entrant.email
+        firstName: entry.entrants?.firstName || '',  // Changed from entry.entrant to entry.entrants
+        lastName: entry.entrants?.lastName || '',    // Use optional chaining to avoid errors
+        email: entry.entrants?.email || ''
       }
     }));
     

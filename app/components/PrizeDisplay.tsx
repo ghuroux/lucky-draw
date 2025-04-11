@@ -1,46 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate } from '@/app/utils/helpers';
-import { GiftIcon, TrophyIcon } from '@heroicons/react/24/outline';
-
-interface Winner {
-  entrant: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
+import { TrophyIcon } from '@heroicons/react/24/outline';
+import { formatCurrency } from '@/app/utils/helpers';
 
 interface Prize {
   id: number;
   name: string;
-  description: string | null;
+  description?: string;
   order: number;
-  winningEntry?: {
-    id: string;
-    entrant: {
-      id: number;
-      firstName: string;
-      lastName: string;
-      email: string;
-    };
-  } | null;
+  winningEntryId?: string | null;
 }
 
 interface PrizeDisplayProps {
   eventId: number;
-  isDrawn: boolean;
+  isDrawn?: boolean;
 }
 
-export default function PrizeDisplay({ eventId, isDrawn }: PrizeDisplayProps) {
+export default function PrizeDisplay({ eventId, isDrawn = false }: PrizeDisplayProps) {
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPrizes = async () => {
+    async function fetchPrizes() {
       try {
         setLoading(true);
         const response = await fetch(`/api/events/${eventId}/prizes`);
@@ -52,78 +35,84 @@ export default function PrizeDisplay({ eventId, isDrawn }: PrizeDisplayProps) {
         const data = await response.json();
         setPrizes(data);
       } catch (err) {
-        setError('Failed to load prizes. Please try again later.');
         console.error('Error fetching prizes:', err);
+        setError('Failed to load prizes. Please try again later.');
       } finally {
         setLoading(false);
       }
-    };
-
+    }
+    
     fetchPrizes();
   }, [eventId]);
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary-500 rounded-full border-t-transparent mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading prizes...</p>
+      <div className="bg-white shadow sm:rounded-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div className="space-y-3">
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
-        <p>{error}</p>
+      <div className="bg-white shadow sm:rounded-lg p-6">
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
   if (prizes.length === 0) {
     return (
-      <div className="text-center py-8 bg-white shadow overflow-hidden sm:rounded-lg">
-        <GiftIcon className="h-12 w-12 text-gray-400 mx-auto" />
-        <p className="mt-2 text-gray-600">No prizes have been added to this event yet.</p>
+      <div className="bg-white shadow sm:rounded-lg p-6">
+        <div className="text-center">
+          <TrophyIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+          <h3 className="text-lg font-medium text-gray-900">No prizes found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            There are no prizes configured for this event yet.
+          </p>
+        </div>
       </div>
     );
   }
 
+  // Sort prizes by order
+  const sortedPrizes = [...prizes].sort((a, b) => a.order - b.order);
+
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div className="bg-white shadow sm:rounded-lg overflow-hidden">
       <div className="px-4 py-5 sm:px-6">
-        <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
-          <TrophyIcon className="h-5 w-5 text-yellow-500 mr-2" />
-          Prizes {isDrawn ? '& Winners' : ''}
+        <h3 className="text-lg leading-6 font-medium text-gray-900">
+          Event Prizes
         </h3>
         <p className="mt-1 max-w-2xl text-sm text-gray-500">
-          {isDrawn 
-            ? 'The following prizes have been awarded to winners.' 
-            : 'The following prizes will be awarded in the upcoming draw.'}
+          {isDrawn ? 'These prizes have been drawn.' : 'These prizes will be awarded after the draw.'}
         </p>
       </div>
+      
       <div className="border-t border-gray-200">
-        <ul className="divide-y divide-gray-200">
-          {prizes.map((prize) => (
+        <ul role="list" className="divide-y divide-gray-200">
+          {sortedPrizes.map((prize) => (
             <li key={prize.id} className="px-4 py-4 sm:px-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <TrophyIcon 
+                  className={`h-8 w-8 mr-4 ${prize.order === 1 ? 'text-yellow-500' : prize.order === 2 ? 'text-gray-400' : prize.order === 3 ? 'text-amber-600' : 'text-blue-500'}`}
+                />
                 <div>
-                  <p className="text-sm font-medium text-primary-600">{prize.name}</p>
+                  <p className="text-lg font-medium text-gray-900">{prize.name}</p>
                   {prize.description && (
-                    <p className="text-sm text-gray-500 mt-1">{prize.description}</p>
+                    <p className="text-sm text-gray-500">{prize.description}</p>
                   )}
                 </div>
-                {isDrawn && prize.winningEntry ? (
-                  <div className="bg-green-50 px-4 py-2 rounded-md">
-                    <p className="text-sm font-medium text-green-800">Winner</p>
-                    <p className="text-sm text-green-700">
-                      {prize.winningEntry.entrant.firstName} {prize.winningEntry.entrant.lastName}
-                    </p>
-                  </div>
-                ) : isDrawn ? (
-                  <div className="bg-yellow-50 px-4 py-2 rounded-md">
-                    <p className="text-sm font-medium text-yellow-800">No Winner</p>
-                  </div>
-                ) : null}
+                {prize.winningEntryId && isDrawn && (
+                  <span className="ml-auto px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Drawn
+                  </span>
+                )}
               </div>
             </li>
           ))}

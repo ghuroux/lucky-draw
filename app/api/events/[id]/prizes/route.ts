@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUserRole } from '@/app/lib/auth-server';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { Prisma } from '@prisma/client';
 
 interface Params {
@@ -44,8 +44,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Verify the event exists
-    const event = await prisma.event.findUnique({
+    // Verify the event exists using db utility
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -53,17 +53,47 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Get all prizes for the event using raw query
-    const prizes = await prisma.$queryRaw<PrizeWithWinner[]>`
-      SELECT p.*, e.id as "winningEntryId", e.* 
-      FROM "prizes" p
-      LEFT JOIN "entries" e ON p."winningEntryId" = e.id
-      LEFT JOIN "entrants" ent ON e."entrantId" = ent.id
-      WHERE p."eventId" = ${eventId}
-      ORDER BY p."order" ASC
-    `;
+    // Get all prizes for the event
+    // Using Prisma's findMany instead of raw query to avoid SQL injection
+    const prizes = await db.prize.findMany({
+      where: { eventId },
+      include: {
+        entries: {
+          include: {
+            entrants: true  // Use correct relationship name
+          }
+        }
+      },
+      orderBy: { order: 'asc' }
+    });
     
-    return NextResponse.json(prizes);
+    // Transform the prizes to match the expected format
+    const transformedPrizes = prizes.map(prize => {
+      // Create the winning entry object if it exists
+      const winningEntry = prize.entries ? {
+        id: prize.entries.id,
+        entrant: {
+          id: prize.entries.entrants?.id || 0,
+          firstName: prize.entries.entrants?.firstName || '',
+          lastName: prize.entries.entrants?.lastName || '',
+          email: prize.entries.entrants?.email || ''
+        }
+      } : null;
+      
+      return {
+        id: prize.id,
+        name: prize.name,
+        description: prize.description,
+        order: prize.order,
+        eventId: prize.eventId,
+        winningEntryId: prize.winningEntryId,
+        winningEntry: winningEntry,
+        createdAt: prize.createdAt,
+        updatedAt: prize.updatedAt
+      };
+    });
+    
+    return NextResponse.json(transformedPrizes);
   } catch (error) {
     console.error('Error fetching prizes:', error);
     return NextResponse.json(
@@ -88,8 +118,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Verify the event exists
-    const event = await prisma.event.findUnique({
+    // Verify the event exists using db utility
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -113,32 +143,28 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Get the highest current order for prizes in this event
-    const highestOrder = await prisma.$queryRaw<{max_order: number}[]>`
-      SELECT MAX("order") as max_order FROM "prizes" WHERE "eventId" = ${eventId}
-    `;
+    const highestOrderPrize = await db.prize.findFirst({
+      where: { eventId },
+      orderBy: { order: 'desc' }
+    });
     
-    const nextOrder = highestOrder[0]?.max_order ? Number(highestOrder[0].max_order) + 1 : 0;
+    const nextOrder = highestOrderPrize ? highestOrderPrize.order + 1 : 0;
     
-    // Create the prize
-    const insertedPrize = await prisma.$executeRaw`
-      INSERT INTO "prizes" ("eventId", "name", "description", "order", "createdAt", "updatedAt")
-      VALUES (${eventId}, ${data.name}, ${data.description || null}, ${data.order !== undefined ? data.order : nextOrder}, NOW(), NOW())
-      RETURNING *
-    `;
+    // Create the prize using db utility
+    const prize = await db.prize.create({
+      data: {
+        eventId,
+        name: data.name,
+        description: data.description || null,
+        order: data.order !== undefined ? data.order : nextOrder
+      }
+    });
     
-    // Fetch the newly created prize to return
-    const prize = await prisma.$queryRaw<any[]>`
-      SELECT * FROM "prizes" 
-      WHERE "eventId" = ${eventId} 
-      ORDER BY "id" DESC 
-      LIMIT 1
-    `;
-    
-    return NextResponse.json(prize[0], { status: 201 });
+    return NextResponse.json(prize, { status: 201 });
   } catch (error) {
     console.error('Error creating prize:', error);
     return NextResponse.json(
-      { error: 'Failed to create prize' },
+      { error: 'Failed to create prize', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
