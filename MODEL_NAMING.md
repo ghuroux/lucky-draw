@@ -37,6 +37,67 @@ The model naming in our Prisma schema currently uses snake_case, but our applica
 
 Our `db` utility in `app/lib/prisma-client.ts` provides a mapping layer that allows application code to use camelCase names while correctly accessing the underlying snake_case Prisma client models.
 
+## Relationship Naming
+
+When using Prisma relations in `include` statements, you must use the field names exactly as they appear in the schema:
+
+```typescript
+// INCORRECT - Using singular name when the schema has plural
+const event = await db.event.findUnique({
+  where: { id: 1 },
+  include: {
+    entries: {
+      include: {
+        entrants: true,
+        event: true, // ❌ Error: 'event' doesn't exist (it's 'events' in the schema)
+      }
+    }
+  }
+});
+
+// CORRECT - Using exact field names from schema
+const event = await db.event.findUnique({
+  where: { id: 1 },
+  include: {
+    entries: {
+      include: {
+        entrants: true,
+        events: true, // ✅ Works: matches schema field name
+      }
+    }
+  }
+});
+```
+
+## Including Related Models
+
+Direct model relationships must be included at the top level of the query. For example, to include prizes for an event:
+
+```typescript
+// CORRECT - Including prizes directly on the event
+const event = await db.event.findUnique({
+  where: { id: 1 },
+  include: {
+    entries: {
+      include: {
+        entrants: true,
+      }
+    },
+    prizes: true // Include prizes at top level, as they relate directly to event
+  }
+});
+```
+
+## Checking Available Relations
+
+When you encounter a relation error, Prisma will often suggest available options marked with `?` in the error message:
+
+```
+Unknown field `event` for include statement on model `entries`. Available options are marked with ?.
+```
+
+You can then check the schema or the error message for the suggested fields.
+
 ## Long-term Solution
 
 For a more permanent solution, we should consider either:
@@ -64,6 +125,8 @@ For a more permanent solution, we should consider either:
    const events = await db.event.findMany();
    ```
 
-3. Test thoroughly, as some model relationships or types might need adjustments.
+3. Keep relation names exactly as they appear in the schema (usually plural forms)
+
+4. Test thoroughly, as some model relationships or types might need adjustments.
 
 If you find other model naming issues, please document them and update the `prisma-client.ts` utility file as needed. 

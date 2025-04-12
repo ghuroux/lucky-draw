@@ -30,16 +30,18 @@ export default async function EventPage({ params }: EventPageProps) {
     const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
+        // Include entries and their related data
         entries: {
           include: {
             entrants: true,
-            event: true,
-            entry_packages: true,
-            prizes: true
+            events: true,
+            entry_packages: true
           }
         },
+        // Include prizes directly related to the event (at top level)
+        prizes: true,
         // Only include packages if using entry packages
-        // packages: true
+        // entry_packages: true
       }
     });
     
@@ -62,8 +64,8 @@ export default async function EventPage({ params }: EventPageProps) {
     const formattedEntries = event.entries.map(entry => ({
       ...entry,
       entrant: {
-        firstName: entry.entrants?.firstName || '',  // Changed from entry.entrant to entry.entrants
-        lastName: entry.entrants?.lastName || '',    // Use optional chaining to avoid errors
+        firstName: entry.entrants?.firstName || '',
+        lastName: entry.entrants?.lastName || '',
         email: entry.entrants?.email || ''
       }
     }));
