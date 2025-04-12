@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Get the event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Get prizes for the event
-    const prizes = await prisma.$queryRaw<Prize[]>`
+    const prizes = await db.$queryRaw<Prize[]>`
       SELECT * FROM "prizes" 
       WHERE "eventId" = ${eventId}
       ORDER BY "order" ASC
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Get all entries for the event
-    const entries = await prisma.entry.findMany({
+    const entries = await db.entry.findMany({
       where: { eventId },
       include: {
         entrant: true
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       selectedEntrantIds.add(winningEntry.entrantId);
       
       // Associate this entry with the prize using a raw query to avoid type issues
-      await prisma.$executeRaw`
+      await db.$executeRaw`
         UPDATE "prizes" 
         SET "winningEntryId" = ${winningEntry.id} 
         WHERE "id" = ${prize.id}
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Update the event as drawn
-    const updatedEvent = await prisma.event.update({
+    const updatedEvent = await db.event.update({
       where: { id: eventId },
       data: {
         status: "DRAWN",

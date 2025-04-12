@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
+import { v4 as uuidv4 } from 'uuid';
 
 // Define types locally to avoid import issues
 interface EntryPackage {
@@ -28,7 +29,9 @@ interface EntryRequestData {
 // GET /api/events/[id]/entries - Get all entries for an event
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const eventId = Number(params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -120,7 +123,9 @@ export async function GET(req: NextRequest, { params }: Params) {
 // POST /api/events/[id]/entries - Create a new entry for an event
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const eventId = Number(params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -178,13 +183,18 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
     
     if (!entrant) {
+      // Create a new timestamp for both createdAt and updatedAt
+      const now = new Date();
+      
       entrant = await db.entrant.create({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
           phone: data.phone || null,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null
+          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+          createdAt: now,
+          updatedAt: now // Add the required updatedAt field
         }
       });
     }
@@ -196,8 +206,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
     
-    // Create the entry (or entries if using a package)
-    const createEntryData = {
+    // Create the basic entry data (without ID)
+    const baseEntryData = {
       eventId,
       entrantId: entrant.id,
       packageId: packageId,
@@ -208,21 +218,34 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (packageId && entryPackage) {
       // Create multiple entries for the package
       for (let i = 0; i < entryPackage.quantity; i++) {
-        const entry = await db.entry.create({
-          data: {
-            ...createEntryData,
-            packageEntryNum: i + 1
-          }
-        });
-        entries.push(entry);
+        try {
+          const entry = await db.entry.create({
+            data: {
+              id: uuidv4(), // Each entry needs its own unique UUID
+              ...baseEntryData,
+              packageEntryNum: i + 1
+            }
+          });
+          entries.push(entry);
+        } catch (createError) {
+          console.error('Error creating package entry:', createError);
+          throw createError; // Re-throw to be caught by the outer catch
+        }
       }
     } else {
       // Create a single entry
-      const entry = await db.entry.create({
-        data: createEntryData
-      });
-      
-      entries = [entry];
+      try {
+        const entry = await db.entry.create({
+          data: {
+            id: uuidv4(), // Generate a UUID for the entry
+            ...baseEntryData
+          }
+        });
+        entries.push(entry);
+      } catch (createError) {
+        console.error('Error creating single entry:', createError);
+        throw createError; // Re-throw to be caught by the outer catch
+      }
     }
     
     // Transform the first entry to include entrant data for the response
@@ -238,7 +261,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   } catch (error) {
     console.error('Error creating entry:', error);
     return NextResponse.json(
-      { error: 'Failed to create entry' },
+      { error: 'Failed to create entry', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

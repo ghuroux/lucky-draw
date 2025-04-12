@@ -54,7 +54,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
     
     // Get the event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
     
     // Get all prizes with their winning entries
-    const prizes = await prisma.$queryRaw<PrizeWithWinner[]>`
+    const prizes = await db.$queryRaw<PrizeWithWinner[]>`
       SELECT p.*, e.id as "winningEntryId", e.* 
       FROM "prizes" p
       LEFT JOIN "entries" e ON p."winningEntryId" = e.id

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUserRole } from '@/app/lib/auth-server';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { Prisma } from '@prisma/client';
 
 interface Params {
@@ -41,19 +41,21 @@ interface PrizeWithWinner {
 // GET /api/events/[id]/prizes/[prizeId] - Get a specific prize
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const prizeId = Number(params.prizeId);
+    // Always await params when using dynamic route parameters
+    const { prizeId } = await params;
+    const prizeIdNum = Number(prizeId);
     
-    if (isNaN(prizeId)) {
+    if (isNaN(prizeIdNum)) {
       return NextResponse.json({ error: 'Invalid prize ID' }, { status: 400 });
     }
     
     // Get the prize with raw query
-    const prizes = await prisma.$queryRaw<PrizeWithWinner[]>`
+    const prizes = await db.$queryRaw<PrizeWithWinner[]>`
       SELECT p.*, e.id as "winningEntryId", e.* 
       FROM "prizes" p
       LEFT JOIN "entries" e ON p."winningEntryId" = e.id
       LEFT JOIN "entrants" ent ON e."entrantId" = ent.id
-      WHERE p."id" = ${prizeId}
+      WHERE p."id" = ${prizeIdNum}
     `;
     
     if (!prizes || prizes.length === 0) {
@@ -79,17 +81,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
-    const prizeId = Number(params.prizeId);
+    // Always await params when using dynamic route parameters
+    const { id, prizeId } = await params;
+    const eventId = Number(id);
+    const prizeIdNum = Number(prizeId);
     
-    if (isNaN(eventId) || isNaN(prizeId)) {
+    if (isNaN(eventId) || isNaN(prizeIdNum)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
     
     // Verify the prize exists and belongs to the event
-    const prizes = await prisma.$queryRaw<PrizeWithWinner[]>`
+    const prizes = await db.$queryRaw<PrizeWithWinner[]>`
       SELECT * FROM "prizes"
-      WHERE "id" = ${prizeId} AND "eventId" = ${eventId}
+      WHERE "id" = ${prizeIdNum} AND "eventId" = ${eventId}
     `;
     
     if (!prizes || prizes.length === 0) {
@@ -97,7 +101,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
     
     // Get the event to check if it's drawn
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -125,9 +129,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       updateQuery += `, "order" = ${data.order}`;
     }
     
-    updateQuery += ` WHERE "id" = ${prizeId} RETURNING *`;
+    updateQuery += ` WHERE "id" = ${prizeIdNum} RETURNING *`;
     
-    const updatedPrizes = await prisma.$queryRawUnsafe<PrizeWithWinner[]>(updateQuery);
+    const updatedPrizes = await db.$queryRawUnsafe<PrizeWithWinner[]>(updateQuery);
     
     return NextResponse.json(updatedPrizes[0]);
   } catch (error) {
@@ -148,17 +152,19 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
-    const prizeId = Number(params.prizeId);
+    // Always await params when using dynamic route parameters
+    const { id, prizeId } = await params;
+    const eventId = Number(id);
+    const prizeIdNum = Number(prizeId);
     
-    if (isNaN(eventId) || isNaN(prizeId)) {
+    if (isNaN(eventId) || isNaN(prizeIdNum)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
     
     // Verify the prize exists and belongs to the event
-    const prizes = await prisma.$queryRaw<PrizeWithWinner[]>`
+    const prizes = await db.$queryRaw<PrizeWithWinner[]>`
       SELECT * FROM "prizes"
-      WHERE "id" = ${prizeId} AND "eventId" = ${eventId}
+      WHERE "id" = ${prizeIdNum} AND "eventId" = ${eventId}
     `;
     
     if (!prizes || prizes.length === 0) {
@@ -166,7 +172,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
     
     // Get the event to check if it's drawn
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -178,9 +184,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
     
     // Delete the prize
-    await prisma.$executeRaw`
+    await db.$executeRaw`
       DELETE FROM "prizes"
-      WHERE "id" = ${prizeId}
+      WHERE "id" = ${prizeIdNum}
     `;
     
     return NextResponse.json({ success: true });

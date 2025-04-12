@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 
 type RouteParams = { params: { id: string } };
 
@@ -23,14 +23,16 @@ interface PrizeWithWinner {
 // GET /api/events/[id]/winners - Get all winners for an event
 export async function GET(request: Request, context: RouteParams) {
   try {
-    const eventId = Number(context.params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await context.params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
     // Get the event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -44,7 +46,7 @@ export async function GET(request: Request, context: RouteParams) {
     }
     
     // Get all prizes with their winning entries using SQL for complete control
-    const prizes = await prisma.$queryRaw`
+    const prizes = await db.$queryRaw`
       SELECT 
         p.id as "prizeId", 
         p.name as "prizeName", 

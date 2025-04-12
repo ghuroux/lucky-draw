@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
+import { v4 as uuidv4 } from 'uuid';
 
 // GET /api/entries - Get all entries (with filtering options)
 export async function GET(req: NextRequest) {
@@ -102,9 +103,10 @@ export async function POST(req: NextRequest) {
     const nextSequence = highestSequence ? highestSequence.sequence + 1 : 1;
     
     // Create the entry
-    const newEntry = await prisma.entry.create({
+    const entry = await prisma.entry.create({
       data: {
-        eventId: Number(eventId),
+        id: uuidv4(), // Ensure we generate a UUID for each entry
+        eventId,
         entrantId: entrant.id,
         sequence: nextSequence,
         donation: donation ? Number(donation) : null
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
       }
     });
     
-    return NextResponse.json(newEntry, { status: 201 });
+    return NextResponse.json(entry, { status: 201 });
   } catch (error) {
     console.error('Error creating entry:', error);
     return NextResponse.json(

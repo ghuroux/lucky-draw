@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUserRole } from '@/app/lib/auth-server';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 
 interface Params {
   params: {
@@ -17,14 +17,16 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Get all packages for the event
-    const packages = await prisma.entryPackage.findMany({
+    // Get all packages for the event using db utility
+    const packages = await db.entryPackage.findMany({
       where: { eventId },
       orderBy: { quantity: 'asc' }
     });
@@ -48,14 +50,16 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    // Verify the event exists
-    const event = await prisma.event.findUnique({
+    // Verify the event exists using db utility
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -74,8 +78,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Package cost must be a non-negative number' }, { status: 400 });
     }
     
-    // Create the package
-    const entryPackage = await prisma.entryPackage.create({
+    // Create the package using db utility
+    const entryPackage = await db.entryPackage.create({
       data: {
         eventId,
         quantity: data.quantity,

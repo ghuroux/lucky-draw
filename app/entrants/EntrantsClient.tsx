@@ -1,23 +1,38 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Entry, Event } from '@prisma/client';
 import { formatDate } from '@/app/utils/helpers';
 import Link from 'next/link';
 import ExportButton from './ExportButton';
 
-type EntryWithEvent = Entry & {
-  event: {
+// Updated type to match the data structure from the API
+type EntryWithEvent = {
+  id: string;
+  eventId: number;
+  entrantId: number;
+  createdAt: Date;
+  packageEntryNum?: number | null;
+  packageId?: number | null;
+  events: {
     id: number;
     name: string;
     status: string;
     drawnAt: Date | null;
-  },
-  entrant: {
+  };
+  entrants: {
+    id: number;
     firstName: string;
     lastName: string;
     email: string;
-  }
+    phone?: string | null;
+    dateOfBirth?: Date | null;
+  } | null;
+  // For compatibility with the existing component, we'll add an entrant property in useMemo
+  entrant?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 };
 
 type EventFilter = {
@@ -35,10 +50,34 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<number | 'all'>('all');
   const [showWinnersOnly, setShowWinnersOnly] = useState(false);
+
+  // Transform entries to include entrant property for compatibility
+  const transformedEntries = useMemo(() => {
+    return entries.map(entry => ({
+      ...entry,
+      // Add entrant property derived from entrants
+      entrant: entry.entrants ? {
+        firstName: entry.entrants.firstName,
+        lastName: entry.entrants.lastName,
+        email: entry.entrants.email
+      } : {
+        firstName: 'Unknown',
+        lastName: '',
+        email: ''
+      },
+      // Add event property derived from events
+      event: {
+        id: entry.eventId,
+        name: entry.events?.name || 'Unknown Event',
+        status: entry.events?.status || 'UNKNOWN',
+        drawnAt: entry.events?.drawnAt || null
+      }
+    }));
+  }, [entries]);
   
   // Apply filters and search
   const filteredEntries = useMemo(() => {
-    return entries.filter(entry => {
+    return transformedEntries.filter(entry => {
       // Filter by event if selected
       if (selectedEvent !== 'all' && entry.event.id !== selectedEvent) {
         return false;
@@ -61,7 +100,7 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
       
       return true;
     });
-  }, [entries, searchTerm, selectedEvent, showWinnersOnly]);
+  }, [transformedEntries, searchTerm, selectedEvent, showWinnersOnly]);
   
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

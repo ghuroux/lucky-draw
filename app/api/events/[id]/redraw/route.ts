@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Get the event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -41,14 +41,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     // Reset all prizes for this event (remove winning entries)
-    await prisma.$executeRaw`
+    await db.$executeRaw`
       UPDATE "prizes" 
       SET "winningEntryId" = NULL 
       WHERE "eventId" = ${eventId}
     `;
     
     // Reset the event status and drawnAt
-    const updatedEvent = await prisma.event.update({
+    const updatedEvent = await db.event.update({
       where: { id: eventId },
       data: {
         status: "OPEN",

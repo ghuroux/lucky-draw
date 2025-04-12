@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
     
     // Fetch the event data first
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         packages: true,
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
     
     // Fetch prizes for this event
-    const prizes = await prisma.$queryRaw`
+    const prizes = await db.$queryRaw`
       SELECT * FROM "prizes" 
       WHERE "eventId" = ${eventId} 
       ORDER BY "order" ASC
@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: { packages: true }
     });
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { packages, prizes, ...eventData } = data;
     
     // Update the event
-    const updatedEvent = await prisma.event.update({
+    const updatedEvent = await db.event.update({
       where: { id: eventId },
       data: {
         name: eventData.name,
@@ -102,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     // Handle prizes update
     if (prizes && Array.isArray(prizes)) {
       // Get existing prizes
-      const existingPrizes = await prisma.$queryRaw`
+      const existingPrizes = await db.$queryRaw`
         SELECT * FROM "prizes" WHERE "eventId" = ${eventId}
       `;
       
@@ -115,7 +115,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         
         if (prize.id) {
           // Update existing prize
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             UPDATE "prizes"
             SET "name" = ${prize.name},
                 "description" = ${prize.description || null},
@@ -126,13 +126,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
           updatedPrizeIds.push(prize.id);
         } else {
           // Create new prize
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             INSERT INTO "prizes" ("eventId", "name", "description", "order", "createdAt", "updatedAt")
             VALUES (${eventId}, ${prize.name}, ${prize.description || null}, ${i}, NOW(), NOW())
           `;
           
           // Get the ID of the newly created prize
-          const newPrizes = await prisma.$queryRaw`
+          const newPrizes = await db.$queryRaw`
             SELECT * FROM "prizes" 
             WHERE "eventId" = ${eventId} 
             ORDER BY "createdAt" DESC 
@@ -148,7 +148,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       // Delete prizes that were removed
       for (const prizeId of existingPrizeIds) {
         if (!updatedPrizeIds.includes(prizeId)) {
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             DELETE FROM "prizes" WHERE "id" = ${prizeId}
           `;
         }
@@ -165,7 +165,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       for (const pkg of packages) {
         if (pkg.id) {
           // Update existing package
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             UPDATE "entry_packages"
             SET "quantity" = ${parseInt(pkg.quantity)},
                 "cost" = ${parseFloat(pkg.cost)},
@@ -176,13 +176,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
           updatedPackageIds.push(pkg.id);
         } else {
           // Create new package
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             INSERT INTO "entry_packages" ("eventId", "quantity", "cost", "isActive", "createdAt", "updatedAt")
             VALUES (${eventId}, ${parseInt(pkg.quantity)}, ${parseFloat(pkg.cost)}, ${pkg.isActive}, NOW(), NOW())
           `;
           
           // Get the ID of the newly created package
-          const newPackages = await prisma.$queryRaw`
+          const newPackages = await db.$queryRaw`
             SELECT * FROM "entry_packages" 
             WHERE "eventId" = ${eventId} 
             ORDER BY "createdAt" DESC 
@@ -198,7 +198,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       // Delete packages that were removed
       for (const packageId of existingPackageIds) {
         if (!updatedPackageIds.includes(packageId)) {
-          await prisma.$executeRaw`
+          await db.$executeRaw`
             DELETE FROM "entry_packages" WHERE "id" = ${packageId}
           `;
         }
@@ -206,19 +206,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
     
     // Get the updated event data
-    const updated = await prisma.event.findUnique({
+    const updated = await db.event.findUnique({
       where: { id: eventId }
     });
     
     // Fetch updated prizes
-    const updatedPrizes = await prisma.$queryRaw`
+    const updatedPrizes = await db.$queryRaw`
       SELECT * FROM "prizes" 
       WHERE "eventId" = ${eventId} 
       ORDER BY "order" ASC
     `;
     
     // Fetch updated packages
-    const updatedPackages = await prisma.$queryRaw`
+    const updatedPackages = await db.$queryRaw`
       SELECT * FROM "entry_packages" 
       WHERE "eventId" = ${eventId} 
       ORDER BY "quantity" ASC
@@ -253,7 +253,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
     
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     
@@ -267,17 +267,17 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
     
     // Delete the prizes first
-    await prisma.$executeRaw`
+    await db.$executeRaw`
       DELETE FROM "prizes" WHERE "eventId" = ${eventId}
     `;
     
     // Delete the packages
-    await prisma.$executeRaw`
+    await db.$executeRaw`
       DELETE FROM "entry_packages" WHERE "eventId" = ${eventId}
     `;
     
     // Delete the event (entries will cascade delete)
-    await prisma.$executeRaw`
+    await db.$executeRaw`
       DELETE FROM "events" WHERE "id" = ${eventId}
     `;
     

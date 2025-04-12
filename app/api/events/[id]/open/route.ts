@@ -19,7 +19,8 @@ export async function POST(
     }
 
     // Get event id from params
-    const eventId = parseInt(params.id);
+    const { id } = await params;
+    const eventId = parseInt(id);
     if (isNaN(eventId)) {
       return NextResponse.json(
         { error: 'Invalid event ID' },
