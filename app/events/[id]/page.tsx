@@ -40,8 +40,8 @@ export default async function EventPage({ params }: EventPageProps) {
         },
         // Include prizes directly related to the event (at top level)
         prizes: true,
-        // Only include packages if using entry packages
-        // entry_packages: true
+        // Include entry packages
+        entry_packages: true
       }
     });
     
@@ -54,11 +54,6 @@ export default async function EventPage({ params }: EventPageProps) {
     
     // Check if event is drawn
     const isEventDrawn = event.status === EventStatus.DRAWN;
-    
-    // Get entry packages if they exist (add this if using packages)
-    // const packages = await db.entryPackage.findMany({
-    //   where: { eventId: event.id }
-    // });
     
     // For the entries list, we need to format the data to match the component's expected structure
     const formattedEntries = event.entries.map(entry => ({
@@ -93,6 +88,12 @@ export default async function EventPage({ params }: EventPageProps) {
                 <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
                   <dl className="sm:divide-y sm:divide-gray-200">
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Event ID</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {event.id}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500">Event Status</dt>
                       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -115,6 +116,12 @@ export default async function EventPage({ params }: EventPageProps) {
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Draw Time</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {event.drawTime || 'Not specified'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500">Entry Cost</dt>
                       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                         {formatCurrency(event.entryCost)}
@@ -123,7 +130,7 @@ export default async function EventPage({ params }: EventPageProps) {
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500">Description</dt>
                       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                        {event.description}
+                        {event.description || 'No description provided'}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -132,16 +139,79 @@ export default async function EventPage({ params }: EventPageProps) {
                         {event.entries.length}
                       </dd>
                     </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Created At</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {new Date(event.createdAt).toLocaleString()}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {new Date(event.updatedAt).toLocaleString()}
+                      </dd>
+                    </div>
+                    {event.drawnAt && (
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">Drawn At</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {new Date(event.drawnAt).toLocaleString()}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
               </div>
               
+              {/* Entry Packages */}
+              {event.entry_packages && event.entry_packages.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">Entry Packages</h2>
+                  <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                    <ul className="divide-y divide-gray-200">
+                      {event.entry_packages.map(pkg => (
+                        <li key={pkg.id} className="px-4 py-4 sm:px-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {pkg.quantity} Entries
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Price: {formatCurrency(pkg.cost)}
+                              </p>
+                            </div>
+                            <div>
+                              <span 
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  pkg.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {pkg.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+              
               {/* Prize Display */}
-              <div className="mt-8">
-                {event.prizes.map(prize => (
-                  <PrizeDisplay key={prize.id} prize={prize} />
-                ))}
-              </div>
+              {event.prizes && event.prizes.length > 0 ? (
+                <div className="mt-8">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">Prizes</h2>
+                  {event.prizes.map(prize => (
+                    <PrizeDisplay key={prize.id} prize={prize} />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-8 bg-white shadow overflow-hidden sm:rounded-md p-4">
+                  <p className="text-sm text-gray-500">No prizes have been set up for this event yet.</p>
+                </div>
+              )}
               
               {/* Draw Results - shown only for drawn events */}
               {isEventDrawn && (
@@ -160,6 +230,7 @@ export default async function EventPage({ params }: EventPageProps) {
               )}
               
               <div className="mt-8">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Entries</h2>
                 <EntriesList 
                   entries={formattedEntries} 
                   winnerId={null}
@@ -174,7 +245,7 @@ export default async function EventPage({ params }: EventPageProps) {
                     <EntryForm 
                       eventId={event.id}
                       entryCost={event.entryCost}
-                      packages={[]} // Use empty array or fetch packages if needed
+                      packages={event.entry_packages || []} 
                     />
                   </div>
                 </div>

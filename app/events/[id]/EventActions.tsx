@@ -2,8 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Event, EventStatus } from '@prisma/client';
+import { EventStatus } from '@prisma/client';
 import Link from 'next/link';
+
+// Define Event type to match what we're using
+interface Event {
+  id: number;
+  name: string;
+  description?: string | null;
+  status: EventStatus;
+  drawnAt?: Date | null;
+  [key: string]: any; // Allow for other properties
+}
 
 interface EventActionsProps {
   event: Event;
@@ -13,6 +23,33 @@ export default function EventActions({ event }: EventActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const openEvent = async () => {
+    if (confirm('Are you sure you want to open this event for entries?')) {
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        const response = await fetch(`/api/events/${event.id}/open`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to open event');
+        }
+        
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const closeEntries = async () => {
     if (confirm('Are you sure you want to close entries for this event?')) {
@@ -81,12 +118,22 @@ export default function EventActions({ event }: EventActionsProps) {
       <div className="space-y-4">
         {/* Edit button - only visible for draft events */}
         {event.status === EventStatus.DRAFT && (
-          <Link
-            href={`/events/${event.id}/edit`}
-            className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md shadow-sm text-center"
-          >
-            Edit Event
-          </Link>
+          <>
+            <Link
+              href={`/events/${event.id}/edit`}
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md shadow-sm text-center"
+            >
+              Edit Event
+            </Link>
+            
+            <button
+              onClick={openEvent}
+              disabled={isLoading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Opening event...' : 'Open Event for Entries'}
+            </button>
+          </>
         )}
         
         {event.status === 'OPEN' && (
@@ -99,7 +146,7 @@ export default function EventActions({ event }: EventActionsProps) {
           </button>
         )}
         
-        {event.status === 'CLOSED' && !event.winnerId && (
+        {event.status === 'CLOSED' && (
           <button
             onClick={performDraw}
             disabled={isLoading}
@@ -109,7 +156,7 @@ export default function EventActions({ event }: EventActionsProps) {
           </button>
         )}
         
-        {event.winnerId && (
+        {event.status === 'DRAWN' && (
           <div className="text-center py-2 text-green-600 font-medium">
             Winner has been drawn!
           </div>
@@ -119,9 +166,11 @@ export default function EventActions({ event }: EventActionsProps) {
           <div>
             <strong>Current status:</strong> {event.status}
           </div>
-          <div>
-            <strong>Winner drawn:</strong> {event.winnerId ? 'Yes' : 'No'}
-          </div>
+          {event.drawnAt && (
+            <div>
+              <strong>Drawn at:</strong> {new Date(event.drawnAt).toLocaleString()}
+            </div>
+          )}
         </div>
       </div>
     </div>
