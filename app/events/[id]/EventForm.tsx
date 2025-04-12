@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Event, EventStatus } from '@prisma/client';
+import { EventStatus } from '@prisma/client';
 import { formatISO } from 'date-fns';
 import Link from 'next/link';
 
@@ -20,6 +20,21 @@ interface PrizeOption {
   name: string;
   description: string;
   order: number;
+}
+
+// Define Event type to match database schema
+interface Event {
+  id?: number;
+  name: string;
+  description?: string | null;
+  date?: Date | string | null;
+  drawTime?: string | null;
+  entryCost: number;
+  status?: EventStatus;
+  drawnAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any; // For other properties
 }
 
 interface EventFormProps {

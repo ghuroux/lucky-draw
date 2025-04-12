@@ -1,4 +1,4 @@
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { notFound, redirect } from 'next/navigation';
 import { EventStatus } from '@prisma/client';
 import ClientOnly from '@/app/components/ClientOnly';
@@ -12,29 +12,35 @@ interface EventEditPageProps {
 }
 
 export default async function EventEditPage({ params }: EventEditPageProps) {
-  const eventId = params.id;
-  const isNewEvent = eventId === 'new';
+  // Always await params when using dynamic route parameters
+  const { id } = await params;
+  const isNewEvent = id === 'new';
   
   let event = null;
   
   if (!isNewEvent) {
-    const id = parseInt(eventId);
+    const eventId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(eventId)) {
       notFound();
     }
     
-    event = await prisma.event.findUnique({
-      where: { id },
-    });
-    
-    if (!event) {
+    try {
+      event = await db.event.findUnique({
+        where: { id: eventId },
+      });
+      
+      if (!event) {
+        notFound();
+      }
+      
+      // Check if event is already open or drawn - if so, it can't be edited
+      if (event.status !== EventStatus.DRAFT) {
+        redirect(`/events/${event.id}`);
+      }
+    } catch (error) {
+      console.error('Error loading event for editing:', error);
       notFound();
-    }
-    
-    // Check if event is already open or drawn - if so, it can't be edited
-    if (event.status !== EventStatus.DRAFT) {
-      redirect(`/events/${event.id}`);
     }
   }
   
