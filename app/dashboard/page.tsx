@@ -6,7 +6,7 @@ import { formatDate, formatCurrency } from '@/app/utils/helpers';
 
 // Make this a server component
 export default async function Dashboard() {
-  // Fetch events directly using db utility
+  // Use our db utility with the correct model mapping
   const events = await db.event.findMany({
     orderBy: {
       createdAt: 'desc'
@@ -28,6 +28,7 @@ export default async function Dashboard() {
   
   // For demo purposes, calculate some additional statistics
   const averageEntriesPerEvent = totalEntries > 0 ? Math.round(totalEntries / totalEvents) : 0;
+  // Placeholder for prize calculation - schema has changed so we need to update this calculation later
   const totalPrizeValue = events.reduce((acc, event) => acc + event.entryCost * event._count.entries, 0);
   
   return (

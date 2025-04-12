@@ -31,20 +31,11 @@ const events = await db.event.findMany(); // ✅ Works
 const user = await db.adminUser.findUnique({ where: { id } }); // ✅ Works
 ```
 
-## How It Works
+## Important Note
 
-The utility maps camelCase model names to their snake_case counterparts:
+The model naming in our Prisma schema currently uses snake_case, but our application code uses camelCase. After running `generate-prisma.sh` which generates the Prisma client, the client will have snake_case property names (events, entries, etc.) that match the schema.
 
-```typescript
-export const db = {
-  adminUser: prismaClient.admin_users,
-  event: prismaClient.events,
-  entry: prismaClient.entries,
-  entrant: prismaClient.entrants,
-  entryPackage: prismaClient.entry_packages,
-  prize: prismaClient.prizes
-};
-```
+Our `db` utility in `app/lib/prisma-client.ts` provides a mapping layer that allows application code to use camelCase names while correctly accessing the underlying snake_case Prisma client models.
 
 ## Long-term Solution
 
@@ -67,7 +58,7 @@ For a more permanent solution, we should consider either:
 2. Replace model references:
    ```typescript
    // Before
-   const events = await prisma.event.findMany();
+   const events = await prisma.events.findMany();
    
    // After
    const events = await db.event.findMany();
