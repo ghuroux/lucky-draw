@@ -1,5 +1,4 @@
 import { db } from '@/app/lib/prisma-client';
-import { prisma } from '@/app/lib/prisma';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import Link from 'next/link';
@@ -7,7 +6,7 @@ import EntrantsClient from './EntrantsClient';
 
 export default async function EntrantsPage() {
   // Fetch all unique entrants with their entries count and event participation count
-  const entrants = await prisma.entrants.findMany({
+  const entrants = await db.entrant.findMany({
     select: {
       id: true,
       firstName: true,
