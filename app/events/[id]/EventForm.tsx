@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EventStatus } from '@prisma/client';
 import { formatISO } from 'date-fns';
 import Link from 'next/link';
+import { formatCurrency } from '@/app/utils/helpers';
 
 // Define package type
 interface PackageOption {
@@ -34,6 +35,7 @@ interface Event {
   drawnAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
+  prizePool?: number | null;
   [key: string]: any; // For other properties
 }
 
@@ -51,6 +53,7 @@ export default function EventForm({ event }: EventFormProps) {
     date: event?.date ? formatISO(new Date(event.date), { representation: 'date' }) : '',
     drawTime: event?.drawTime || '',
     entryCost: event?.entryCost !== undefined ? event.entryCost.toString() : '0',
+    prizePool: event?.prizePool !== undefined ? event.prizePool.toString() : '',
   });
 
   // Package state
@@ -86,26 +89,52 @@ export default function EventForm({ event }: EventFormProps) {
   }, [event]);
 
   const fetchPackages = async (eventId: number) => {
+    console.log("Fetching packages for event:", eventId);
     setIsLoadingPackages(true);
+    
     try {
       const response = await fetch(`/api/events/${eventId}/packages`);
+      console.log("Packages response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        setPackages(data.length > 0 ? data : [
-          { quantity: 1, cost: event?.entryCost || 0, isActive: true },
-          { quantity: 5, cost: 0, isActive: false },
-          { quantity: 10, cost: 0, isActive: false }
-        ]);
+        console.log("Packages data received:", data);
+        
+        if (data.length > 0) {
+          console.log("Setting packages from API, count:", data.length);
+          setPackages(data);
+        } else {
+          console.log("No packages found, creating defaults");
+          // If no packages yet, create default ones
+          const defaults = [
+            { quantity: 1, cost: event?.entryCost || 0, isActive: true },
+            { quantity: 5, cost: 0, isActive: false },
+            { quantity: 10, cost: 0, isActive: false }
+          ];
+          console.log("Default packages:", defaults);
+          setPackages(defaults);
+        }
       } else {
-        // If no packages yet, create default ones
-        setPackages([
+        console.log("Packages API error, creating defaults");
+        // If API error, create default ones
+        const defaults = [
           { quantity: 1, cost: event?.entryCost || 0, isActive: true },
           { quantity: 5, cost: 0, isActive: false },
           { quantity: 10, cost: 0, isActive: false }
-        ]);
+        ];
+        console.log("Default packages:", defaults);
+        setPackages(defaults);
       }
     } catch (error) {
-      console.error('Error fetching packages:', error);
+      console.error("Error fetching packages:", error);
+      // If error, create default ones
+      const defaults = [
+        { quantity: 1, cost: event?.entryCost || 0, isActive: true },
+        { quantity: 5, cost: 0, isActive: false },
+        { quantity: 10, cost: 0, isActive: false }
+      ];
+      console.log("Default packages (after error):", defaults);
+      setPackages(defaults);
     } finally {
       setIsLoadingPackages(false);
     }
@@ -175,10 +204,23 @@ export default function EventForm({ event }: EventFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Special handling for entryCost to ensure it's a valid number
+    if (name === 'entryCost') {
+      // Only allow numbers and decimal point
+      const isValidNumber = /^(\d*\.?\d*)$/.test(value);
+      if (value === '' || isValidNumber) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handlePrizeChange = (index: number, field: keyof PrizeOption, value: string) => {
@@ -209,10 +251,27 @@ export default function EventForm({ event }: EventFormProps) {
   const handlePackageChange = (index: number, field: keyof PackageOption, value: any) => {
     setPackages(prev => {
       const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        [field]: field === 'cost' || field === 'quantity' ? parseFloat(value) : value
-      };
+      
+      // Special handling for numeric fields
+      if (field === 'quantity' || field === 'cost') {
+        // Only allow numbers and decimal point for cost
+        if (field === 'cost') {
+          const isValidNumber = /^(\d*\.?\d*)$/.test(value);
+          if (value === '' || isValidNumber) {
+            updated[index] = { ...updated[index], [field]: value };
+          }
+        } else {
+          // For quantity, only allow positive integers
+          const isValidInt = /^\d*$/.test(value);
+          if (value === '' || isValidInt) {
+            updated[index] = { ...updated[index], [field]: value };
+          }
+        }
+      } else {
+        // For non-numeric fields like isActive
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      
       return updated;
     });
   };
@@ -239,19 +298,29 @@ export default function EventForm({ event }: EventFormProps) {
   };
 
   const addPackage = () => {
-    setPackages(prev => [
-      ...prev, 
-      { quantity: 1, cost: 0, isActive: false }
-    ]);
+    console.log("Adding new package - current packages:", packages.length);
+    const newPackage = { quantity: 1, cost: 0, isActive: false };
+    console.log("New package:", newPackage);
+    
+    setPackages(prev => {
+      const updated = [...prev, newPackage];
+      console.log("Updated packages count:", updated.length);
+      return updated;
+    });
   };
 
   const removePackage = (index: number) => {
-    setPackages(prev => prev.filter((_, i) => i !== index));
+    console.log(`Removing package at index ${index}, current count: ${packages.length}`);
+    
+    setPackages(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      console.log(`After removal: ${updated.length} packages`);
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
@@ -259,27 +328,73 @@ export default function EventForm({ event }: EventFormProps) {
     setIsSubmitting(true);
     setServerError(null);
     
-    const eventData = {
-      name: formData.name,
-      description: formData.description,
-      date: formData.date ? new Date(formData.date).toISOString() : null,
-      drawTime: formData.drawTime,
-      entryCost: parseFloat(formData.entryCost),
-      prizes: prizes.map((prize, index) => ({
-        id: prize.id,
-        name: prize.name,
-        description: prize.description,
-        order: index
-      })),
-      packages: packages.map(pkg => ({
-        id: pkg.id,
-        quantity: pkg.quantity,
-        cost: pkg.cost,
-        isActive: pkg.isActive
-      }))
-    };
-    
     try {
+      console.log("Form submission - Raw packages:", packages);
+      
+      // Format packages data - ensure numeric values are parsed as numbers
+      const formattedPackages = packages
+        .filter(pkg => {
+          // Filter out invalid packages (zero quantity, etc)
+          const quantity = parseInt(pkg.quantity.toString(), 10);
+          const isValid = !isNaN(quantity) && quantity > 0;
+          if (!isValid) {
+            console.log("Filtering out invalid package:", pkg);
+          }
+          return isValid;
+        })
+        .map(pkg => {
+          // Parse numeric values
+          const quantity = parseInt(pkg.quantity.toString(), 10);
+          const cost = parseFloat(pkg.cost.toString()) || 0;
+          
+          // Ensure id is properly handled
+          const id = pkg.id ? Number(pkg.id) : undefined;
+          
+          console.log(`Package ${id || 'new'}: Quantity=${quantity}, Cost=${cost}, Active=${pkg.isActive}, ID type: ${typeof id}`);
+          
+          return {
+            id: id,
+            quantity: quantity,
+            cost: cost,
+            isActive: pkg.isActive === true // Ensure it's a boolean
+          };
+        });
+      
+      console.log("Formatted packages:", formattedPackages);
+      
+      // Format prizes data
+      const formattedPrizes = prizes
+        .filter(prize => prize.name.trim() !== '') // Remove empty prizes
+        .map((prize, index) => {
+          // Ensure id is properly handled
+          const id = prize.id ? Number(prize.id) : undefined;
+          
+          return {
+            id: id,
+            name: prize.name.trim(),
+            description: prize.description?.trim() || '',
+            order: index,
+          };
+        });
+      
+      console.log("Formatted prizes:", formattedPrizes);
+      
+      // Parse entryCost to ensure it's a valid number
+      const parsedEntryCost = parseFloat(formData.entryCost) || 0;
+      
+      const eventData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        date: formData.date || null,
+        drawTime: formData.drawTime || null,
+        entryCost: parsedEntryCost,
+        prizePool: formData.prizePool ? parseFloat(formData.prizePool) : null,
+        packages: formattedPackages,
+        prizes: formattedPrizes
+      };
+      
+      console.log("Submitting event data:", eventData);
+      
       const apiUrl = isNewEvent ? '/api/events' : `/api/events/${event.id}`;
       const method = isNewEvent ? 'POST' : 'PUT';
       
@@ -328,7 +443,7 @@ export default function EventForm({ event }: EventFormProps) {
   return (
     <div className="form-container">
       {/* Navigation */}
-      <div className="mb-6 flex items-center">
+      <div className="mb-4 flex items-center">
         <Link
           href={isNewEvent ? '/dashboard' : `/events/${event.id}`}
           className="text-blue-600 hover:text-blue-800 flex items-center"
@@ -341,14 +456,14 @@ export default function EventForm({ event }: EventFormProps) {
       </div>
       
       {serverError && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
           {serverError}
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="form-section">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Event Name */}
-        <div className="form-field">
+        <div className="form-field mb-3">
           <label htmlFor="name" className="form-label">
             Event Name *
           </label>
@@ -364,24 +479,24 @@ export default function EventForm({ event }: EventFormProps) {
         </div>
         
         {/* Event Description */}
-        <div className="form-field">
+        <div className="form-field mb-3">
           <label htmlFor="description" className="form-label">
             Description
           </label>
           <textarea
             id="description"
             name="description"
-            rows={3}
+            rows={2}
             value={formData.description}
             onChange={handleChange}
             className="form-textarea"
           />
         </div>
         
-        {/* Two column layout for date/time */}
-        <div className="form-grid">
+        {/* Three column layout for date/time/cost */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
           {/* Event Date */}
-          <div className="form-field">
+          <div className="form-field mb-2">
             <label htmlFor="date" className="form-label">
               Event Date *
             </label>
@@ -397,7 +512,7 @@ export default function EventForm({ event }: EventFormProps) {
           </div>
           
           {/* Draw Time */}
-          <div className="form-field">
+          <div className="form-field mb-2">
             <label htmlFor="drawTime" className="form-label">
               Draw Time
             </label>
@@ -410,175 +525,206 @@ export default function EventForm({ event }: EventFormProps) {
               className="form-input"
             />
           </div>
-        </div>
 
-        <div className="form-grid">
-          {/* Entry Cost */}
-          <div className="form-field">
-            <label htmlFor="entryCost" className="form-label">
-              Entry Cost *
-            </label>
-            <div className="relative inline-block">
-              <div className="input-prefix">
-                <span>R</span>
+          {/* Entry Cost and Prize Pool - stack them in a single column */}
+          <div className="form-field mb-2 space-y-3">
+            {/* Entry Cost */}
+            <div>
+              <label htmlFor="entryCost" className="form-label">
+                Entry Cost *
+              </label>
+              <div className="relative inline-block w-full">
+                <div className="input-prefix">
+                  <span>R</span>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  id="entryCost"
+                  name="entryCost"
+                  value={formData.entryCost}
+                  onChange={handleChange}
+                  className={`form-input input-with-prefix ${errors.entryCost ? 'border-red-300' : ''}`}
+                />
               </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                id="entryCost"
-                name="entryCost"
-                value={formData.entryCost}
-                onChange={handleChange}
-                className={`form-input form-input-short input-with-prefix ${errors.entryCost ? 'border-red-300' : ''}`}
-              />
+              {errors.entryCost && <p className="form-error">{errors.entryCost}</p>}
             </div>
-            {errors.entryCost && <p className="form-error">{errors.entryCost}</p>}
+            
+            {/* Prize Pool */}
+            <div>
+              <label htmlFor="prizePool" className="form-label">
+                Prize Pool (Optional)
+              </label>
+              <div className="relative inline-block w-full">
+                <div className="input-prefix">
+                  <span>R</span>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  id="prizePool"
+                  name="prizePool"
+                  value={formData.prizePool}
+                  onChange={handleChange}
+                  className="form-input input-with-prefix"
+                  placeholder="Auto-calculated if empty"
+                />
+              </div>
+            </div>
           </div>
         </div>
         
         {/* Prizes Section */}
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Prizes</h3>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="mt-4 border-t pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-medium text-gray-900">Prizes</h3>
+            <button
+              type="button"
+              onClick={addPrize}
+              className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Prize
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mb-3">
             Add one or more prizes for this event. Each prize will have one winner.
           </p>
           
-          {prizes.map((prize, index) => (
-            <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium">Prize #{index + 1}</h4>
-                {prizes.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removePrize(index)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              
-              <div className="form-grid">
-                {/* Prize Name */}
-                <div className="form-field">
-                  <label htmlFor={`prize-name-${index}`} className="form-label">
-                    Prize Name *
-                  </label>
-                  <input
-                    type="text"
-                    id={`prize-name-${index}`}
-                    value={prize.name}
-                    onChange={(e) => handlePrizeChange(index, 'name', e.target.value)}
-                    className={`form-input ${prizeErrors[index]?.name ? 'border-red-300' : ''}`}
-                  />
-                  {prizeErrors[index]?.name && <p className="form-error">{prizeErrors[index].name}</p>}
+          <div className="space-y-3">
+            {prizes.map((prize, index) => (
+              <div key={index} className="p-3 border border-gray-200 rounded-md bg-gray-50">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium text-sm">Prize #{index + 1}</h4>
+                  {prizes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePrize(index)}
+                      className="text-red-600 hover:text-red-800 text-xs"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
                 
-                {/* Prize Description */}
-                <div className="form-field">
-                  <label htmlFor={`prize-description-${index}`} className="form-label">
-                    Prize Description
-                  </label>
-                  <textarea
-                    id={`prize-description-${index}`}
-                    rows={2}
-                    value={prize.description}
-                    onChange={(e) => handlePrizeChange(index, 'description', e.target.value)}
-                    className="form-textarea"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                  {/* Prize Name */}
+                  <div className="form-field mb-0">
+                    <label htmlFor={`prize-name-${index}`} className="form-label text-xs">
+                      Prize Name *
+                    </label>
+                    <input
+                      type="text"
+                      id={`prize-name-${index}`}
+                      value={prize.name}
+                      onChange={(e) => handlePrizeChange(index, 'name', e.target.value)}
+                      className={`form-input py-2 ${prizeErrors[index]?.name ? 'border-red-300' : ''}`}
+                    />
+                    {prizeErrors[index]?.name && <p className="form-error">{prizeErrors[index].name}</p>}
+                  </div>
+                  
+                  {/* Prize Description */}
+                  <div className="form-field mb-0">
+                    <label htmlFor={`prize-description-${index}`} className="form-label text-xs">
+                      Prize Description
+                    </label>
+                    <input
+                      type="text"
+                      id={`prize-description-${index}`}
+                      value={prize.description}
+                      onChange={(e) => handlePrizeChange(index, 'description', e.target.value)}
+                      className="form-input py-2"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          
-          <button
-            type="button"
-            onClick={addPrize}
-            className="mt-2 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            Add Another Prize
-          </button>
+            ))}
+          </div>
         </div>
-
-        {/* Entry Packages Section */}
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Entry Packages</h3>
-          <p className="text-sm text-gray-500 mb-4">
+        
+        {/* Entry Packages */}
+        <div className="mt-4 border-t pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-medium text-gray-900">Entry Packages</h3>
+          </div>
+          <p className="text-sm text-gray-500 mb-3">
             Configure packages for multiple entries at different price points.
           </p>
           
-          {isLoadingPackages ? (
-            <div className="text-center py-4">
-              <p>Loading packages...</p>
-            </div>
-          ) : (
-            <div className="border border-gray-200 rounded-md overflow-hidden">
-              <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-2 border-b border-gray-200">
-                <div className="col-span-3 font-medium text-gray-500 text-sm">Entries</div>
-                <div className="col-span-3 font-medium text-gray-500 text-sm">Price (R)</div>
-                <div className="col-span-3 font-medium text-gray-500 text-sm">Active</div>
-                <div className="col-span-3 font-medium text-gray-500 text-sm">Actions</div>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {packages.map((pkg, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-3 p-3">
+          <div className="space-y-3">
+            {packages.map((pkg, index) => (
+              <div key={index} className="p-3 border border-gray-200 rounded-md bg-gray-50">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
+                  {/* Package Quantity */}
+                  <div className="form-field mb-0">
+                    <label htmlFor={`pkg-quantity-${index}`} className="form-label text-xs">
+                      # of Entries
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      id={`pkg-quantity-${index}`}
+                      value={pkg.quantity}
+                      onChange={(e) => handlePackageChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                      className="form-input py-2"
+                    />
+                  </div>
+                  
+                  {/* Package Cost */}
+                  <div className="form-field mb-0">
+                    <label htmlFor={`pkg-cost-${index}`} className="form-label text-xs">
+                      Package Cost
+                    </label>
+                    <div className="relative">
+                      <div className="input-prefix">
+                        <span>R</span>
+                      </div>
                       <input
                         type="number"
-                        min="1"
-                        value={pkg.quantity}
-                        onChange={(e) => handlePackageChange(index, 'quantity', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div className="col-span-3 p-3">
-                      <input
-                        type="number"
-                        min="0"
                         step="0.01"
+                        min="0"
+                        id={`pkg-cost-${index}`}
                         value={pkg.cost}
-                        onChange={(e) => handlePackageChange(index, 'cost', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        onChange={(e) => handlePackageChange(index, 'cost', parseFloat(e.target.value) || 0)}
+                        className="form-input input-with-prefix py-2"
                       />
                     </div>
-                    <div className="col-span-3">
+                  </div>
+                  
+                  {/* Package Active */}
+                  <div className="form-field mb-0 flex items-center">
+                    <div className="flex items-center h-full pt-6">
                       <input
                         type="checkbox"
+                        id={`pkg-active-${index}`}
                         checked={pkg.isActive}
                         onChange={(e) => handlePackageChange(index, 'isActive', e.target.checked)}
                         className="form-checkbox"
                       />
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => removePackage(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
+                      <label htmlFor={`pkg-active-${index}`} className="ml-2 text-sm text-gray-700">
+                        Active
+                      </label>
                     </div>
                   </div>
-                ))}
+                  
+                  {/* Savings */}
+                  <div className="flex items-center h-full pt-6">
+                    {pkg.quantity > 1 && formData.entryCost && pkg.cost < (pkg.quantity * parseFloat(formData.entryCost)) ? (
+                      <span className="text-xs font-medium text-green-600">
+                        Save {formatCurrency((pkg.quantity * parseFloat(formData.entryCost)) - pkg.cost)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-          
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={addPackage}
-              className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded border border-gray-300"
-            >
-              + Add Package
-            </button>
+            ))}
           </div>
         </div>
-        
+
         {/* Form Actions */}
         <div className="form-actions">
           <button
@@ -590,10 +736,15 @@ export default function EventForm({ event }: EventFormProps) {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
             className="form-submit-btn"
+            disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : isNewEvent ? 'Create Event' : 'Update Event'}
+            {isSubmitting
+              ? 'Saving...'
+              : isNewEvent
+                ? 'Create Event'
+                : 'Update Event'
+            }
           </button>
         </div>
       </form>

@@ -19,6 +19,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     
     const eventId = Number(params.id);
+console.log("[id]/redraw - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return errorResponse('BAD_REQUEST', { message: 'Invalid event ID' });

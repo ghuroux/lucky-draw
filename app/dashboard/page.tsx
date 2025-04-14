@@ -3,6 +3,7 @@ import { db } from '@/app/lib/prisma-client';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import { formatDate, formatCurrency } from '@/app/utils/helpers';
+import TestDataButtons from '@/app/components/TestDataButtons';
 
 // Make this a server component
 export default async function Dashboard() {
@@ -12,9 +13,16 @@ export default async function Dashboard() {
       createdAt: 'desc'
     },
     include: {
+      entries: {
+        include: {
+          entry_packages: true
+        }
+      },
+      entry_packages: true,
       _count: {
-        select: { entries: true }
-      }
+        select: { entries: true, prizes: true }
+      },
+      prizes: true
     }
   });
   
@@ -28,8 +36,33 @@ export default async function Dashboard() {
   
   // For demo purposes, calculate some additional statistics
   const averageEntriesPerEvent = totalEntries > 0 ? Math.round(totalEntries / totalEvents) : 0;
-  // Placeholder for prize calculation - schema has changed so we need to update this calculation later
-  const totalPrizeValue = events.reduce((acc, event) => acc + event.entryCost * event._count.entries, 0);
+  
+  // Calculate accurate total value of all entries, accounting for packages
+  const totalPrizeValue = events.reduce((acc, event) => {
+    // Track packages already counted to avoid double-counting
+    const countedPackages = new Set();
+    
+    // Calculate value from individual entries (no package)
+    const individualEntries = event.entries.filter(entry => !entry.packageId).length;
+    const individualValue = individualEntries * event.entryCost;
+    
+    // Calculate value from package entries
+    let packageValue = 0;
+    
+    for (const entry of event.entries) {
+      if (entry.packageId && !countedPackages.has(entry.packageId)) {
+        // Find the package
+        const entryPackage = event.entry_packages.find(pkg => pkg.id === entry.packageId);
+        if (entryPackage) {
+          packageValue += entryPackage.cost;
+          countedPackages.add(entry.packageId);
+        }
+      }
+    }
+    
+    // Return total value for this event
+    return acc + individualValue + packageValue;
+  }, 0);
   
   return (
     <ClientOnly>
@@ -76,6 +109,11 @@ export default async function Dashboard() {
           </div>
         </div>
         
+        {/* Add Test Data Tools */}
+        <div className="mb-6">
+          <TestDataButtons />
+        </div>
+        
         {events.length === 0 ? (
           <div className="card p-6">
             <p className="text-gray-500 text-center">No events found. Create your first event to get started.</p>
@@ -110,7 +148,7 @@ export default async function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {events.map((event) => (
+                  {events.slice(0, 4).map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/events/${event.id}`} className="text-primary-600 hover:text-primary-900">
@@ -118,7 +156,7 @@ export default async function Dashboard() {
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(event.date ? event.date.toString() : null)}
+                        {formatDate(event.date ? event.date.toString() : null, false, event.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatCurrency(event.entryCost)}
@@ -141,8 +179,10 @@ export default async function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {event.drawnAt ? (event.numberOfWinners) : event.numberOfWinners}
-                        {!event.drawnAt && <span> (planned)</span>}
+                        {event.drawnAt 
+                          ? (event._count.prizes > 0 ? `${event._count.prizes} winner${event._count.prizes !== 1 ? 's' : ''}` : 'No winners')
+                          : (event.prizes?.length > 0 ? `${event.prizes.length} planned` : 'No prizes')
+                        }
                       </td>
                     </tr>
                   ))}
@@ -150,13 +190,16 @@ export default async function Dashboard() {
               </table>
             </div>
             
-            {events.length > 10 && (
+            {events.length > 4 && (
               <div className="bg-white px-4 py-3 border-t border-gray-200 text-center">
                 <Link
                   href="/events"
-                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                  className="inline-flex items-center justify-center text-sm font-medium text-primary-600 hover:text-primary-500 transition-colors"
                 >
-                  View all events
+                  <span>See more events</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                 </Link>
               </div>
             )}
@@ -265,19 +308,19 @@ export default async function Dashboard() {
             </div>
           </div>
           
-          {/* Total Prize Value */}
+          {/* Value of All Entries */}
           <div className="card">
             <div className="px-6 py-5">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Total Prize Value</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Value of All Entries</h3>
               <div className="mt-2 flex items-baseline">
                 <p className="text-4xl font-semibold text-secondary-600">{formatCurrency(totalPrizeValue)}</p>
                 <p className="ml-2 text-sm font-medium text-gray-500">across all events</p>
               </div>
               <div className="mt-4 text-sm text-gray-500">
                 {completedDraws > 0 ? (
-                  <p>Successfully awarded across {completedDraws} completed event{completedDraws > 1 ? 's' : ''}</p>
+                  <p>Total revenue from {totalEntries} entries (including packages)</p>
                 ) : (
-                  <p>No prizes awarded yet</p>
+                  <p>No entries purchased yet</p>
                 )}
               </div>
             </div>

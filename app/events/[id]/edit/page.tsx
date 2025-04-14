@@ -13,7 +13,8 @@ interface EventEditPageProps {
 
 export default async function EventEditPage({ params }: EventEditPageProps) {
   // Always await params when using dynamic route parameters
-  const { id } = await params;
+  const id = params.id;
+console.log("[id]/edit - Using params.id:", id);
   const isNewEvent = id === 'new';
   
   let event = null;

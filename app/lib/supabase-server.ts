@@ -5,10 +5,12 @@ import { cookies } from 'next/headers';
 // Create a server client (for use in server components or API routes)
 export async function createServerSupabase() {
   try {
-    // Get the cookies from the request
+    // Get a cookies instance first
     const cookieStore = cookies();
     
     // Create the Supabase client with the cookies
+    // Note: We're using a synchronous function that returns the cookieStore
+    // to avoid Next.js warnings about dynamic APIs
     const supabase = createServerComponentClient({
       cookies: () => cookieStore,
     });

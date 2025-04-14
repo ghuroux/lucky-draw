@@ -1,28 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Entry } from '@prisma/client';
 import { formatDate } from '@/app/utils/helpers';
 
-type EntryWithEvent = Entry & {
-  event: {
-    id: number;
-    name: string;
-    status: string;
-    drawnAt: Date | null;
-  },
-  entrant: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  }
+type EntrantWithCounts = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  dateOfBirth?: Date | null;
+  createdAt: Date;
+  entriesCount: number;
+  eventsCount: number;
 };
 
 interface ExportButtonProps {
-  entries: EntryWithEvent[];
+  entrants: EntrantWithCounts[];
 }
 
-export default function ExportButton({ entries }: ExportButtonProps) {
+export default function ExportButton({ entrants }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   const generateCsv = () => {
@@ -33,19 +30,23 @@ export default function ExportButton({ entries }: ExportButtonProps) {
       const headers = [
         'Name',
         'Email',
-        'Event',
-        'Event Status',
-        'Date Entered'
+        'Phone',
+        'Date of Birth',
+        'Events Participated',
+        'Total Entries',
+        'Date Joined'
       ];
       
       // Generate CSV rows
-      const rows = entries.map(entry => {
+      const rows = entrants.map(entrant => {
         return [
-          `${entry.entrant.firstName} ${entry.entrant.lastName}`,
-          entry.entrant.email,
-          entry.event.name,
-          entry.event.status,
-          formatDate(entry.createdAt.toString(), true)
+          `${entrant.firstName} ${entrant.lastName}`,
+          entrant.email,
+          entrant.phone || '',
+          entrant.dateOfBirth ? formatDate(entrant.dateOfBirth.toString()) : '',
+          entrant.eventsCount.toString(),
+          entrant.entriesCount.toString(),
+          formatDate(entrant.createdAt.toString())
         ];
       });
       
@@ -67,7 +68,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `all-entrants-${formatDate(new Date().toString(), true)}.csv`);
+      link.setAttribute('download', `all-entrants-${formatDate(new Date().toString())}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

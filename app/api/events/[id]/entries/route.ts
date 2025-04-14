@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
 import { v4 as uuidv4 } from 'uuid';
+import { notifyEventUpdate } from '../stream/route';
 
 // Define types locally to avoid import issues
 interface EntryPackage {
@@ -12,9 +13,7 @@ interface EntryPackage {
 }
 
 interface Params {
-  params: {
-    id: string;
-  };
+  id: string;
 }
 
 interface EntryRequestData {
@@ -24,13 +23,18 @@ interface EntryRequestData {
   phone?: string;
   dateOfBirth?: string | null;
   packageId?: number | null;
+  quantity?: number;
+  additionalEntries?: number;
+  entrantId?: number;
 }
 
 // GET /api/events/[id]/entries - Get all entries for an event
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, context: { params: Params }) {
   try {
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
+    // Await params before accessing properties in Next.js 15
+    const params = await context.params;
+    const id = params.id;
+    console.log("[id]/entries - Using params.id:", id);
     const eventId = Number(id);
     
     if (isNaN(eventId)) {
@@ -121,10 +125,12 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // POST /api/events/[id]/entries - Create a new entry for an event
-export async function POST(request: NextRequest, { params }: Params) {
+export async function POST(request: NextRequest, context: { params: Params }) {
   try {
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
+    // Await params before accessing properties in Next.js 15
+    const params = await context.params;
+    const id = params.id;
+    console.log("[id]/entries - Using params.id:", id);
     const eventId = Number(id);
     
     if (isNaN(eventId)) {
@@ -178,25 +184,39 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
     
     // Lookup or create the entrant
-    let entrant = await db.entrant.findUnique({
-      where: { email: data.email }
-    });
+    let entrant;
     
-    if (!entrant) {
-      // Create a new timestamp for both createdAt and updatedAt
-      const now = new Date();
-      
-      entrant = await db.entrant.create({
-        data: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone || null,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-          createdAt: now,
-          updatedAt: now // Add the required updatedAt field
-        }
+    if (data.entrantId) {
+      // Use existing entrant if provided
+      entrant = await db.entrant.findUnique({
+        where: { id: data.entrantId }
       });
+      
+      if (!entrant) {
+        return NextResponse.json({ error: 'Entrant not found' }, { status: 404 });
+      }
+    } else {
+      // Look up by email
+      entrant = await db.entrant.findUnique({
+        where: { email: data.email }
+      });
+      
+      if (!entrant) {
+        // Create a new timestamp for both createdAt and updatedAt
+        const now = new Date();
+        
+        entrant = await db.entrant.create({
+          data: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone || null,
+            dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+            createdAt: now,
+            updatedAt: now // Add the required updatedAt field
+          }
+        });
+      }
     }
     
     if (!entrant) {
@@ -214,7 +234,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     };
     
     let entries = [];
+    let additionalEntryCount = 0;
     
+    // Step 1: Create package entries if a package is selected
     if (packageId && entryPackage) {
       // Create multiple entries for the package
       for (let i = 0; i < entryPackage.quantity; i++) {
@@ -232,28 +254,79 @@ export async function POST(request: NextRequest, { params }: Params) {
           throw createError; // Re-throw to be caught by the outer catch
         }
       }
-    } else {
-      // Create a single entry
-      try {
-        const entry = await db.entry.create({
-          data: {
-            id: uuidv4(), // Generate a UUID for the entry
-            ...baseEntryData
-          }
-        });
-        entries.push(entry);
-      } catch (createError) {
-        console.error('Error creating single entry:', createError);
-        throw createError; // Re-throw to be caught by the outer catch
+    }
+    
+    // Step 2: Create additional entries (if any)
+    if (packageId && data.additionalEntries && data.additionalEntries > 0) {
+      additionalEntryCount = data.additionalEntries;
+      
+      // Create additional entries at regular price (without package)
+      for (let i = 0; i < data.additionalEntries; i++) {
+        try {
+          const entry = await db.entry.create({
+            data: {
+              id: uuidv4(), // Generate a UUID for the entry
+              eventId,
+              entrantId: entrant.id,
+              packageId: null // No package for additional entries
+            }
+          });
+          entries.push(entry);
+        } catch (createError) {
+          console.error('Error creating additional entry:', createError);
+          throw createError;
+        }
+      }
+    } else if (!packageId) {
+      // Create regular entries if no package is selected
+      const quantity = data.quantity || 1;
+      
+      for (let i = 0; i < quantity; i++) {
+        try {
+          const entry = await db.entry.create({
+            data: {
+              id: uuidv4(), // Generate a UUID for the entry
+              ...baseEntryData
+            }
+          });
+          entries.push(entry);
+        } catch (createError) {
+          console.error('Error creating entry:', createError);
+          throw createError; // Re-throw to be caught by the outer catch
+        }
       }
     }
     
     // Transform the first entry to include entrant data for the response
     if (entries.length > 0) {
       const firstEntry = entries[0];
+      
+      // Format entry for presentation
+      const formattedEntry = {
+        id: firstEntry.id,
+        entrant: entrant ? {
+          firstName: entrant.firstName || 'Unknown',
+          lastName: entrant.lastName || 'Unknown',
+          email: entrant.email || 'unknown@example.com'
+        } : null,
+        eventId: firstEntry.eventId,
+        createdAt: firstEntry.createdAt.toISOString()
+      };
+      
+      // Notify connected clients about the new entry
+      try {
+        notifyEventUpdate(eventId, formattedEntry);
+      } catch (notifyError) {
+        console.error('Error notifying clients:', notifyError);
+        // Continue even if notification fails
+      }
+      
       return NextResponse.json({
         ...firstEntry,
-        entrant: entrant // Add entrant property for frontend compatibility
+        entrant: entrant, // Add entrant property for frontend compatibility
+        totalCreated: entries.length, // Add the total number of entries created
+        packageEntries: packageId ? entryPackage?.quantity || 0 : 0,
+        additionalEntries: additionalEntryCount
       }, { status: 201 });
     }
     

@@ -1,38 +1,25 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { formatDate } from '@/app/utils/helpers';
 import Link from 'next/link';
 import ExportButton from './ExportButton';
 
-// Updated type to match the data structure from the API
-type EntryWithEvent = {
-  id: string;
-  eventId: number;
-  entrantId: number;
+// Type for unique entrants with count
+type EntrantWithCounts = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  dateOfBirth?: Date | null;
   createdAt: Date;
-  packageEntryNum?: number | null;
-  packageId?: number | null;
-  events: {
-    id: number;
-    name: string;
-    status: string;
-    drawnAt: Date | null;
-  };
-  entrants: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string | null;
-    dateOfBirth?: Date | null;
-  } | null;
-  // For compatibility with the existing component, we'll add an entrant property in useMemo
-  entrant?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  entriesCount: number;
+  eventsCount: number;
+  entries: {
+    id: string;
+    eventId: number;
+  }[];
 };
 
 type EventFilter = {
@@ -42,65 +29,37 @@ type EventFilter = {
 };
 
 interface EntrantsClientProps {
-  entries: EntryWithEvent[];
+  entrants: EntrantWithCounts[];
   events: EventFilter[];
 }
 
-export default function EntrantsClient({ entries, events }: EntrantsClientProps) {
+export default function EntrantsClient({ entrants, events }: EntrantsClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<number | 'all'>('all');
-  const [showWinnersOnly, setShowWinnersOnly] = useState(false);
 
-  // Transform entries to include entrant property for compatibility
-  const transformedEntries = useMemo(() => {
-    return entries.map(entry => ({
-      ...entry,
-      // Add entrant property derived from entrants
-      entrant: entry.entrants ? {
-        firstName: entry.entrants.firstName,
-        lastName: entry.entrants.lastName,
-        email: entry.entrants.email
-      } : {
-        firstName: 'Unknown',
-        lastName: '',
-        email: ''
-      },
-      // Add event property derived from events
-      event: {
-        id: entry.eventId,
-        name: entry.events?.name || 'Unknown Event',
-        status: entry.events?.status || 'UNKNOWN',
-        drawnAt: entry.events?.drawnAt || null
-      }
-    }));
-  }, [entries]);
-  
   // Apply filters and search
-  const filteredEntries = useMemo(() => {
-    return transformedEntries.filter(entry => {
+  const filteredEntrants = useMemo(() => {
+    return entrants.filter(entrant => {
       // Filter by event if selected
-      if (selectedEvent !== 'all' && entry.event.id !== selectedEvent) {
-        return false;
+      if (selectedEvent !== 'all') {
+        // Check if entrant has an entry in the selected event
+        const hasEventEntry = entrant.entries.some(entry => entry.eventId === selectedEvent);
+        if (!hasEventEntry) return false;
       }
-      
-      // Filter winners only if enabled
-      // Note: We cannot filter by winner status anymore since the schema changed
-      // Keeping the filter UI but it won't have any effect for now
       
       // Apply search term if provided
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         return (
-          entry.entrant.firstName.toLowerCase().includes(searchLower) ||
-          entry.entrant.lastName.toLowerCase().includes(searchLower) ||
-          entry.entrant.email.toLowerCase().includes(searchLower) ||
-          entry.event.name.toLowerCase().includes(searchLower)
+          entrant.firstName.toLowerCase().includes(searchLower) ||
+          entrant.lastName.toLowerCase().includes(searchLower) ||
+          entrant.email.toLowerCase().includes(searchLower)
         );
       }
       
       return true;
     });
-  }, [transformedEntries, searchTerm, selectedEvent, showWinnersOnly]);
+  }, [entrants, searchTerm, selectedEvent]);
   
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,16 +71,11 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
     setSelectedEvent(e.target.value === 'all' ? 'all' : parseInt(e.target.value));
   };
   
-  // Handle winners only toggle
-  const handleWinnersToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setShowWinnersOnly(e.target.checked);
-  };
-  
   return (
     <div className="space-y-6">
       {/* Filters section */}
       <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-        <div className="md:grid md:grid-cols-3 md:gap-6">
+        <div className="md:grid md:grid-cols-2 md:gap-6">
           {/* Search input */}
           <div className="md:col-span-1">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700">
@@ -133,7 +87,7 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
                 name="search"
                 id="search"
                 className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                placeholder="Name, email or event..."
+                placeholder="Name or email..."
                 value={searchTerm}
                 onChange={handleSearchChange}
               />
@@ -160,25 +114,6 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
               ))}
             </select>
           </div>
-          
-          {/* Winners toggle */}
-          <div className="md:col-span-1 mt-6 md:mt-0 flex items-center">
-            <div className="flex items-center h-5">
-              <input
-                id="winners-only"
-                name="winners-only"
-                type="checkbox"
-                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
-                checked={showWinnersOnly}
-                onChange={handleWinnersToggle}
-              />
-            </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="winners-only" className="font-medium text-gray-700">
-                Show Winners Only
-              </label>
-            </div>
-          </div>
         </div>
       </div>
       
@@ -186,15 +121,15 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="flex justify-between items-center px-4 py-5 sm:px-6 border-b border-gray-200">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Entrants ({filteredEntries.length})
+            Entrants ({filteredEntrants.length})
           </h3>
           
-          {filteredEntries.length > 0 && (
-            <ExportButton entries={filteredEntries} />
+          {filteredEntrants.length > 0 && (
+            <ExportButton entrants={filteredEntrants} />
           )}
         </div>
         
-        {filteredEntries.length === 0 ? (
+        {filteredEntrants.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No matching entrants found.</p>
           </div>
@@ -210,67 +145,42 @@ export default function EntrantsClient({ entries, events }: EntrantsClientProps)
                     Email
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Event
+                    Events
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Entries
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date Entered
+                    Date Joined
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEntries.map((entry) => {
-                  // We can't check for winners this way anymore
-                  // const isWinner = entry.event.winnerId === entry.id;
-                  // Just set isWinner to false until we implement prize-based winner checks
-                  const isWinner = false;
-                  
-                  return (
-                    <tr key={entry.id} className={`hover:bg-gray-50 ${isWinner ? 'bg-yellow-50' : ''}`}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {isWinner && (
-                            <span className="flex-shrink-0 inline-block mr-2 h-5 w-5 text-yellow-600">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                            </span>
-                          )}
-                          <div className="text-sm font-medium text-gray-900">
-                            {entry.entrant.firstName} {entry.entrant.lastName}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {entry.entrant.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link 
-                          href={`/events/${entry.event.id}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {entry.event.name}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          isWinner 
-                            ? 'bg-green-100 text-green-800' 
-                            : entry.event.status === 'DRAWN'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {isWinner ? 'Winner' : entry.event.status === 'DRAWN' ? 'Entered' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(entry.createdAt.toString(), 'PPp')}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredEntrants.map((entrant) => (
+                  <tr key={entrant.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {entrant.firstName} {entrant.lastName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {entrant.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {entrant.eventsCount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {entrant.entriesCount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(entrant.createdAt.toString())}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

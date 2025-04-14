@@ -1,4 +1,4 @@
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { formatDate, formatCurrency } from '@/app/utils/helpers';
 import Link from 'next/link';
 import AdminLayout from '@/app/components/AdminLayout';
@@ -8,16 +8,17 @@ import ExportButton from './ExportButton';
 
 export default async function PastEventsPage() {
   // Fetch past events (those with DRAWN status)
-  const pastEvents = await prisma.event.findMany({
+  const pastEvents = await db.event.findMany({
     where: {
       status: EventStatus.DRAWN,
     },
     include: {
       entries: {
         include: {
-          entrant: true
+          entrants: true
         }
       },
+      prizes: true,
       _count: {
         select: { entries: true }
       }
@@ -74,10 +75,10 @@ export default async function PastEventsPage() {
                         Entries
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Winner
+                        Winners
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Prize
+                        Value of Entries
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -86,9 +87,10 @@ export default async function PastEventsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {pastEvents.map((event) => {
-                      // Find winner entry
-                      const winner = event.winnerId 
-                        ? event.entries.find(entry => entry.id === event.winnerId) 
+                      // Find winner entry - account for both potential winnerId formats
+                      const winningEntryId = event.winnerId || event.winningEntryId;
+                      const winner = winningEntryId
+                        ? event.entries.find(entry => entry.id === winningEntryId)
                         : null;
                       
                       return (
@@ -104,19 +106,14 @@ export default async function PastEventsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {event._count.entries}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {winner ? (
-                              <div>
-                                <p className="font-medium text-gray-900">{winner.entrant?.firstName} {winner.entrant?.lastName}</p>
-                                <p className="text-gray-500">{winner.entrant?.email}</p>
-                              </div>
-                            ) : (
-                              <span className="text-gray-500">No winner selected</span>
-                            )}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {event.prizes && event.prizes.length > 0 
+                              ? `${event.prizes.length} winner${event.prizes.length !== 1 ? 's' : ''}`
+                              : 'No winners'
+                            }
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div>
-                              <p className="font-medium">{event.prizeName}</p>
                               <p>Value: {formatCurrency(event.entryCost * event._count.entries)}</p>
                             </div>
                           </td>

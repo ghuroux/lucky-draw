@@ -48,6 +48,7 @@ interface ResultItem {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const eventId = Number(params.id);
+console.log("[id]/draw-results - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });

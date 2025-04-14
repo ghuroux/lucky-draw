@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EventStatus } from '@prisma/client';
 import Link from 'next/link';
+import { PresentationChartBarIcon } from '@heroicons/react/24/outline';
 
 // Define Event type to match what we're using
 interface Event {
@@ -106,9 +107,7 @@ export default function EventActions({ event }: EventActionsProps) {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-xl font-bold mb-4">Event Actions</h2>
-      
+    <div>
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-md mb-4">
           {error}
@@ -116,12 +115,23 @@ export default function EventActions({ event }: EventActionsProps) {
       )}
       
       <div className="space-y-4">
+        {/* Event Presentation button - visible for all event statuses */}
+        <Link
+          href={`/events/${event.id}/presentation`}
+          className="block w-full text-center py-2 px-4 border border-green-700 rounded-md shadow-sm text-sm font-medium text-white bg-green-800 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          <div className="flex items-center justify-center">
+            <PresentationChartBarIcon className="h-5 w-5 mr-2" />
+            Event Presentation
+          </div>
+        </Link>
+        
         {/* Edit button - only visible for draft events */}
         {event.status === EventStatus.DRAFT && (
           <>
             <Link
               href={`/events/${event.id}/edit`}
-              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md shadow-sm text-center"
+              className="block w-full btn-enhanced-blue"
             >
               Edit Event
             </Link>
@@ -129,7 +139,7 @@ export default function EventActions({ event }: EventActionsProps) {
             <button
               onClick={openEvent}
               disabled={isLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-enhanced-green"
             >
               {isLoading ? 'Opening event...' : 'Open Event for Entries'}
             </button>
@@ -140,7 +150,7 @@ export default function EventActions({ event }: EventActionsProps) {
           <button
             onClick={closeEntries}
             disabled={isLoading}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-enhanced-orange"
           >
             {isLoading ? 'Closing entries...' : 'Close Entries'}
           </button>
@@ -150,7 +160,7 @@ export default function EventActions({ event }: EventActionsProps) {
           <button
             onClick={performDraw}
             disabled={isLoading}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-enhanced-green"
           >
             {isLoading ? 'Performing draw...' : 'Perform Draw'}
           </button>

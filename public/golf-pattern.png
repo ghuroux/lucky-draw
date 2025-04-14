@@ -1,0 +1,16 @@
+/* This is a placeholder for the golf-pattern.png file 
+
+Please create a simple, repeatable pattern image with a golf theme to be used as a decorative element in the presentation page. The image should:
+
+1. Be a PNG file with transparent background
+2. Contain subtle golf elements like golf balls, tees, or simple fairway patterns
+3. Be designed to tile seamlessly when used in a background
+4. Use dark green and gold/yellow colors to match the presentation theme
+5. Have a height of approximately 20-40px to work as a border element
+6. Be optimized for web (small file size)
+
+Place the image in the /public directory so it can be accessed at /golf-pattern.png
+
+Until this image is created, the presentation page will still work, but the decorative border at the bottom of the header will not be displayed.
+
+*/ 

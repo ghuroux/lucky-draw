@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
+import { prisma } from '@/app/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 type RouteParams = { params: { id: string } };
 
@@ -46,7 +48,7 @@ export async function GET(request: Request, context: RouteParams) {
     }
     
     // Get all prizes with their winning entries using SQL for complete control
-    const prizes = await db.$queryRaw`
+    const prizes = await prisma.$queryRaw`
       SELECT 
         p.id as "prizeId", 
         p.name as "prizeName", 

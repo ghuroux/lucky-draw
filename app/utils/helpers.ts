@@ -1,9 +1,16 @@
 // Format a date string to a more readable format
 export function formatDate(
   dateString: string | null | undefined, 
-  formatOrIncludeTime: boolean | string = false
+  formatOrIncludeTime: boolean | string = false,
+  eventStatus?: string
 ): string {
-  if (!dateString) return 'Not set';
+  if (!dateString) {
+    // For drawn events, show a different message
+    if (eventStatus === 'DRAWN') {
+      return 'Already held';
+    }
+    return 'Not set';
+  }
   
   const date = new Date(dateString);
   

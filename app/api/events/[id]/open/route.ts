@@ -19,7 +19,8 @@ export async function POST(
     }
 
     // Get event id from params
-    const { id } = await params;
+    const id = params.id;
+console.log("[id]/open - Using params.id:", id);
     const eventId = parseInt(id);
     if (isNaN(eventId)) {
       return NextResponse.json(

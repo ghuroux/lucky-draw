@@ -42,7 +42,8 @@ interface PrizeWithWinner {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     // Always await params when using dynamic route parameters
-    const { prizeId } = await params;
+    const prizeId = params.prizeId;
+console.log("prizes/[prizeId] - Using params.prizeId:", prizeId);
     const prizeIdNum = Number(prizeId);
     
     if (isNaN(prizeIdNum)) {

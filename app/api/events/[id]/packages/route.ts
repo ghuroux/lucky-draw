@@ -17,9 +17,10 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
-    const eventId = Number(id);
+    // Access params.id directly
+    const eventId = Number(params.id);
+console.log("[id]/packages - Using params.id:", params.id);
+    console.log("Packages GET - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -50,9 +51,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
-    const eventId = Number(id);
+    // Access params.id directly
+    const eventId = Number(params.id);
+console.log("[id]/packages - Using params.id:", params.id);
+    console.log("Packages POST - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });

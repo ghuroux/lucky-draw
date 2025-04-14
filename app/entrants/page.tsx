@@ -1,21 +1,43 @@
 import { db } from '@/app/lib/prisma-client';
+import { prisma } from '@/app/lib/prisma';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import Link from 'next/link';
 import EntrantsClient from './EntrantsClient';
 
 export default async function EntrantsPage() {
-  // Fetch all entries with their related events
-  const entries = await db.entry.findMany({
-    include: {
-      events: {
+  // Fetch all unique entrants with their entries count and event participation count
+  const entrants = await prisma.entrants.findMany({
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      dateOfBirth: true,
+      createdAt: true,
+      entries: {
         select: {
-          name: true,
-          date: true
+          id: true,
+          eventId: true,
         }
-      },
-      entrants: true
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
     }
+  });
+
+  // Calculate event participation count (unique events per entrant)
+  const entrantsWithCounts = entrants.map(entrant => {
+    // Get unique event IDs the entrant has participated in
+    const uniqueEventIds = new Set(entrant.entries.map(entry => entry.eventId));
+
+    return {
+      ...entrant,
+      entriesCount: entrant.entries.length,
+      eventsCount: uniqueEventIds.size
+    };
   });
 
   // Fetch all events for the filter dropdown
@@ -48,12 +70,12 @@ export default async function EntrantsPage() {
               </div>
             </div>
             
-            {entries.length === 0 ? (
+            {entrantsWithCounts.length === 0 ? (
               <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 text-center">
                 <p className="text-gray-500">No entrants found. Entries will appear here when people enter your events.</p>
               </div>
             ) : (
-              <EntrantsClient entries={entries} events={events} />
+              <EntrantsClient entrants={entrantsWithCounts} events={events} />
             )}
           </div>
         </div>

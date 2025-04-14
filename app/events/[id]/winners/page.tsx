@@ -1,4 +1,4 @@
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { notFound } from 'next/navigation';
 import PrizeWinners from '@/app/components/PrizeWinners';
 import ClientOnly from '@/app/components/ClientOnly';
@@ -12,6 +12,8 @@ interface WinnersPageProps {
 
 export default async function WinnersPage({ params }: WinnersPageProps) {
   const eventId = parseInt(params.id);
+console.log("[id]/winners - Using params.id:", params.id);
+  console.log("Winners page - Using params.id:", params.id);
   
   if (isNaN(eventId)) {
     notFound();
@@ -19,7 +21,7 @@ export default async function WinnersPage({ params }: WinnersPageProps) {
   
   try {
     // Fetch event data
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId }
     });
     

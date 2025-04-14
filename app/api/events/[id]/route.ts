@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { db } from '@/app/lib/prisma-client';
 import { getServerUserRole } from '@/app/lib/auth-server';
 import { EventStatus } from '@prisma/client';
 
 interface Params {
-  params: {
-    id: string;
-  };
+  id: string;
 }
 
 // GET /api/events/[id] - Retrieve a specific event
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, context: { params: Params }) {
   try {
-    const eventId = Number(params.id);
+    // Await params before accessing properties in Next.js 15
+    const params = await context.params;
+    const id = params.id;
+    console.log("events/[id] - Using params.id:", id);
+    console.log("Event GET - Using params.id:", id);
+    
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -22,10 +26,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
-        packages: true,
+        entry_packages: true,
         entries: {
           include: {
-            entrant: true
+            entrants: true
           }
         }
       }
@@ -35,16 +39,41 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Fetch prizes for this event
-    const prizes = await db.$queryRaw`
-      SELECT * FROM "prizes" 
-      WHERE "eventId" = ${eventId} 
-      ORDER BY "order" ASC
-    `;
+    // Fetch prizes for this event (using raw query for sorting)
+    const prizes = await db.prize.findMany({
+      where: { eventId },
+      orderBy: { order: 'asc' }
+    });
     
-    // Combine and return the event with prizes
+    // Transform entries to include properly formatted entrant data
+    const formattedEntries = event.entries.map(entry => {
+      // Transform entrants to entrant for compatibility
+      const entrant = entry.entrants ? {
+        id: entry.entrants.id,
+        firstName: entry.entrants.firstName || 'Unknown',
+        lastName: entry.entrants.lastName || 'Unknown', 
+        email: entry.entrants.email || 'unknown@example.com',
+        phone: entry.entrants.phone,
+        dateOfBirth: entry.entrants.dateOfBirth
+      } : null;
+      
+      return {
+        ...entry,
+        entrant, // Add transformed entrant
+        entrants: undefined // Remove entrants to avoid confusion
+      };
+    });
+    
+    // Get total entries count
+    const totalEntries = await db.entry.count({
+      where: { eventId }
+    });
+    
+    // Combine and return the event with prizes and properly formatted entries
     return NextResponse.json({
       ...event,
+      entries: formattedEntries,
+      totalEntries,
       prizes
     });
   } catch (error) {
@@ -57,7 +86,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // PUT /api/events/[id] - Update an event
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: { params: Params }) {
   try {
     // Check authentication for protected ops
     const role = await getServerUserRole();
@@ -65,7 +94,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
+    // Await params before accessing properties in Next.js 15
+    const params = await context.params;
+    const id = params.id;
+    console.log("events/[id] - Using params.id:", id);
+    console.log("Event PUT - Using params.id:", id);
+    
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -73,7 +108,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     
     const event = await db.event.findUnique({
       where: { id: eventId },
-      include: { packages: true }
+      include: { entry_packages: true }
     });
     
     if (!event) {
@@ -85,7 +120,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
     // Extract packages and prizes data
     const { packages, prizes, ...eventData } = data;
     
-    // Update the event
+    console.log("Updating event with data:", { 
+      id: eventId, 
+      name: eventData.name,
+      description: eventData.description,
+      date: eventData.date ? new Date(eventData.date) : null,
+      drawTime: eventData.drawTime,
+      entryCost: parseFloat(eventData.entryCost)
+    });
+    
+    // Update the event - removed numberOfWinners field
     const updatedEvent = await db.event.update({
       where: { id: eventId },
       data: {
@@ -94,17 +138,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
         date: eventData.date ? new Date(eventData.date) : null,
         drawTime: eventData.drawTime,
         entryCost: parseFloat(eventData.entryCost),
-        // Update legacy fields to maintain schema compatibility
-        numberOfWinners: prizes?.length || 1,
       },
     });
     
     // Handle prizes update
     if (prizes && Array.isArray(prizes)) {
       // Get existing prizes
-      const existingPrizes = await db.$queryRaw`
-        SELECT * FROM "prizes" WHERE "eventId" = ${eventId}
-      `;
+      const existingPrizes = await db.prize.findMany({
+        where: { eventId }
+      });
       
       const existingPrizeIds = existingPrizes.map(prize => prize.id);
       const updatedPrizeIds = [];
@@ -115,92 +157,102 @@ export async function PUT(req: NextRequest, { params }: Params) {
         
         if (prize.id) {
           // Update existing prize
-          await db.$executeRaw`
-            UPDATE "prizes"
-            SET "name" = ${prize.name},
-                "description" = ${prize.description || null},
-                "order" = ${i},
-                "updatedAt" = NOW()
-            WHERE "id" = ${prize.id} AND "eventId" = ${eventId}
-          `;
+          await db.prize.update({
+            where: { id: prize.id },
+            data: {
+              name: prize.name,
+              description: prize.description || null,
+              order: i,
+              updatedAt: new Date()
+            }
+          });
           updatedPrizeIds.push(prize.id);
         } else {
           // Create new prize
-          await db.$executeRaw`
-            INSERT INTO "prizes" ("eventId", "name", "description", "order", "createdAt", "updatedAt")
-            VALUES (${eventId}, ${prize.name}, ${prize.description || null}, ${i}, NOW(), NOW())
-          `;
+          const newPrizes = await db.prize.create({
+            data: {
+              eventId,
+              name: prize.name,
+              description: prize.description || null,
+              order: i,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          });
           
-          // Get the ID of the newly created prize
-          const newPrizes = await db.$queryRaw`
-            SELECT * FROM "prizes" 
-            WHERE "eventId" = ${eventId} 
-            ORDER BY "createdAt" DESC 
-            LIMIT 1
-          `;
-          
-          if (newPrizes.length > 0) {
-            updatedPrizeIds.push(newPrizes[0].id);
-          }
+          updatedPrizeIds.push(newPrizes.id);
         }
       }
       
       // Delete prizes that were removed
       for (const prizeId of existingPrizeIds) {
         if (!updatedPrizeIds.includes(prizeId)) {
-          await db.$executeRaw`
-            DELETE FROM "prizes" WHERE "id" = ${prizeId}
-          `;
+          await db.prize.delete({
+            where: { id: prizeId }
+          });
         }
       }
     }
     
     // Handle packages update
     if (packages && Array.isArray(packages)) {
+      console.log("Processing packages:", packages);
+      
       // Get existing package IDs
-      const existingPackageIds = event.packages.map(pkg => pkg.id);
+      const existingPackageIds = event.entry_packages.map(pkg => pkg.id);
+      console.log("Existing package IDs:", existingPackageIds);
+      
       const updatedPackageIds = [];
       
       // Update or create packages
       for (const pkg of packages) {
-        if (pkg.id) {
-          // Update existing package
-          await db.$executeRaw`
-            UPDATE "entry_packages"
-            SET "quantity" = ${parseInt(pkg.quantity)},
-                "cost" = ${parseFloat(pkg.cost)},
-                "isActive" = ${pkg.isActive},
-                "updatedAt" = NOW()
-            WHERE "id" = ${pkg.id}
-          `;
-          updatedPackageIds.push(pkg.id);
-        } else {
-          // Create new package
-          await db.$executeRaw`
-            INSERT INTO "entry_packages" ("eventId", "quantity", "cost", "isActive", "createdAt", "updatedAt")
-            VALUES (${eventId}, ${parseInt(pkg.quantity)}, ${parseFloat(pkg.cost)}, ${pkg.isActive}, NOW(), NOW())
-          `;
-          
-          // Get the ID of the newly created package
-          const newPackages = await db.$queryRaw`
-            SELECT * FROM "entry_packages" 
-            WHERE "eventId" = ${eventId} 
-            ORDER BY "createdAt" DESC 
-            LIMIT 1
-          `;
-          
-          if (newPackages.length > 0) {
-            updatedPackageIds.push(newPackages[0].id);
+        console.log("Processing package:", pkg);
+        
+        try {
+          if (pkg.id) {
+            // Update existing package
+            console.log(`Updating package ${pkg.id}:`, pkg);
+            await db.entryPackage.update({
+              where: { id: pkg.id },
+              data: {
+                quantity: parseInt(pkg.quantity.toString()),
+                cost: parseFloat(pkg.cost.toString()),
+                isActive: pkg.isActive,
+                updatedAt: new Date()
+              }
+            });
+            updatedPackageIds.push(pkg.id);
+          } else {
+            // Create new package
+            console.log(`Creating new package:`, pkg);
+            const newPackages = await db.entryPackage.create({
+              data: {
+                eventId,
+                quantity: parseInt(pkg.quantity.toString()),
+                cost: parseFloat(pkg.cost.toString()),
+                isActive: pkg.isActive,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }
+            });
+            
+            console.log("New package created with ID:", newPackages.id);
+            updatedPackageIds.push(newPackages.id);
           }
+        } catch (error) {
+          console.error("Error saving package:", pkg, error);
         }
       }
+      
+      console.log("Updated package IDs:", updatedPackageIds);
       
       // Delete packages that were removed
       for (const packageId of existingPackageIds) {
         if (!updatedPackageIds.includes(packageId)) {
-          await db.$executeRaw`
-            DELETE FROM "entry_packages" WHERE "id" = ${packageId}
-          `;
+          console.log(`Deleting package ${packageId}`);
+          await db.entryPackage.delete({
+            where: { id: packageId }
+          });
         }
       }
     }
@@ -211,18 +263,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
     });
     
     // Fetch updated prizes
-    const updatedPrizes = await db.$queryRaw`
-      SELECT * FROM "prizes" 
-      WHERE "eventId" = ${eventId} 
-      ORDER BY "order" ASC
-    `;
+    const updatedPrizes = await db.prize.findMany({
+      where: { eventId },
+      orderBy: { order: 'asc' }
+    });
     
     // Fetch updated packages
-    const updatedPackages = await db.$queryRaw`
-      SELECT * FROM "entry_packages" 
-      WHERE "eventId" = ${eventId} 
-      ORDER BY "quantity" ASC
-    `;
+    const updatedPackages = await db.entryPackage.findMany({
+      where: { eventId },
+      orderBy: { quantity: 'asc' }
+    });
     
     return NextResponse.json({
       ...updated,
@@ -239,7 +289,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 // DELETE /api/events/[id] - Delete an event
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, context: { params: Params }) {
   try {
     // Check authentication for protected ops
     const role = await getServerUserRole();
@@ -247,7 +297,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
+    // Await params before accessing properties in Next.js 15
+    const params = await context.params;
+    const id = params.id;
+    console.log("events/[id] - Using params.id:", id);
+    console.log("Event DELETE - Using params.id:", id);
+    
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -267,19 +323,19 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
     
     // Delete the prizes first
-    await db.$executeRaw`
-      DELETE FROM "prizes" WHERE "eventId" = ${eventId}
-    `;
+    await db.prize.deleteMany({
+      where: { eventId }
+    });
     
     // Delete the packages
-    await db.$executeRaw`
-      DELETE FROM "entry_packages" WHERE "eventId" = ${eventId}
-    `;
+    await db.entryPackage.deleteMany({
+      where: { eventId }
+    });
     
     // Delete the event (entries will cascade delete)
-    await db.$executeRaw`
-      DELETE FROM "events" WHERE "id" = ${eventId}
-    `;
+    await db.event.delete({
+      where: { id: eventId }
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {

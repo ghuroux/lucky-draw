@@ -89,13 +89,18 @@ export async function createAdminUser() {
 // Get the current user in a server component
 export async function getServerUser() {
   try {
+    console.log("getServerUser: Creating Supabase client...");
     const supabase = await createServerSupabase();
+    
+    console.log("getServerUser: Getting session...");
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session?.user) {
+      console.log("getServerUser: No session or user found");
       return null;
     }
     
+    console.log("getServerUser: User found with ID:", session.user.id);
     return session.user;
   } catch (error) {
     console.error('Error in getServerUser:', error);
@@ -106,6 +111,8 @@ export async function getServerUser() {
 // Get user role from a server component
 export async function getServerUserRole() {
   try {
+    console.log("getServerUserRole: Starting role check");
+    
     // Make sure Prisma is initialized
     if (!prisma) {
       console.error('Prisma client is not properly initialized');
@@ -115,15 +122,18 @@ export async function getServerUserRole() {
     const user = await getServerUser();
     
     if (!user) {
+      console.log("getServerUserRole: No user found, returning null");
       return null;
     }
     
     try {
+      console.log("getServerUserRole: Looking up user in database, ID:", user.id);
       // Use admin_users model (snake_case)
       const dbUser = await prismaClient.admin_users.findUnique({
         where: { id: user.id }
       });
       
+      console.log("getServerUserRole: User role found:", dbUser?.role || "null");
       return dbUser?.role || null;
     } catch (dbError) {
       console.error('Database error in getServerUserRole:', dbError);

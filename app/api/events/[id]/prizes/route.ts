@@ -38,9 +38,10 @@ interface PrizeWithWinner {
 // GET /api/events/[id]/prizes - Retrieve all prizes for an event
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
-    const eventId = Number(id);
+    // Access params.id directly
+    const eventId = Number(params.id);
+console.log("[id]/prizes - Using params.id:", params.id);
+    console.log("Prizes GET - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -114,9 +115,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Always await params when using dynamic route parameters
-    const { id } = await params;
-    const eventId = Number(id);
+    // Access params.id directly
+    const eventId = Number(params.id);
+console.log("[id]/prizes - Using params.id:", params.id);
+    console.log("Prizes POST - Using params.id:", params.id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });

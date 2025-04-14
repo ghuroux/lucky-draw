@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/app/lib/prisma-client';
 import { prisma } from '@/app/lib/prisma';
 import { getServerUserRole } from '@/app/lib/auth-server';
-import { Prisma } from '@prisma/client';
+import { Prisma, EventStatus } from '@prisma/client';
 
 interface Params {
   params: {
@@ -38,7 +39,7 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // POST /api/events/[id]/draw - Perform the draw for a specific event
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, context: Params) {
   try {
     // Check authentication
     const role = await getServerUserRole();
@@ -46,7 +47,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const eventId = Number(params.id);
+    // Always await params when using dynamic route parameters
+    const { id } = await context.params;
+    const eventId = Number(id);
     
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
@@ -69,12 +72,11 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
     
-    // Get prizes for the event
-    const prizes = await db.$queryRaw<Prize[]>`
-      SELECT * FROM "prizes" 
-      WHERE "eventId" = ${eventId}
-      ORDER BY "order" ASC
-    `;
+    // Get prizes for the event using the Prisma client directly
+    const prizes = await prisma.prizes.findMany({
+      where: { eventId },
+      orderBy: { order: 'asc' }
+    });
     
     // Check if there are prizes to draw for
     if (prizes.length === 0) {
@@ -88,7 +90,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const entries = await db.entry.findMany({
       where: { eventId },
       include: {
-        entrant: true
+        entrants: true
       }
     });
     
@@ -137,12 +139,11 @@ export async function POST(req: NextRequest, { params }: Params) {
       // Record that this entrant has won
       selectedEntrantIds.add(winningEntry.entrantId);
       
-      // Associate this entry with the prize using a raw query to avoid type issues
-      await db.$executeRaw`
-        UPDATE "prizes" 
-        SET "winningEntryId" = ${winningEntry.id} 
-        WHERE "id" = ${prize.id}
-      `;
+      // Associate this entry with the prize using the DB wrapper
+      await prisma.prizes.update({
+        where: { id: prize.id },
+        data: { winningEntryId: winningEntry.id.toString() }
+      });
       
       results.push({
         prize,
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const updatedEvent = await db.event.update({
       where: { id: eventId },
       data: {
-        status: "DRAWN",
+        status: EventStatus.DRAWN,
         drawnAt: new Date()
       }
     });

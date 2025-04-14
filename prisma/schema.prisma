@@ -26,6 +26,9 @@ model entrants {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime
   entries     entries[]
+
+  @@index([firstName, lastName])
+  @@index([createdAt])
 }
 
 model entries {
@@ -43,6 +46,8 @@ model entries {
   @@index([entrantId])
   @@index([eventId])
   @@index([packageId])
+  @@index([createdAt])
+  @@index([eventId, createdAt])
 }
 
 model entry_packages {
@@ -66,6 +71,7 @@ model events {
   date           DateTime?
   drawTime       String?
   entryCost      Float            @default(0)
+  prizePool      Float?           
   status         EventStatus      @default(DRAFT)
   drawnAt        DateTime?
   createdAt      DateTime         @default(now())
@@ -73,6 +79,11 @@ model events {
   entries        entries[]
   entry_packages entry_packages[]
   prizes         prizes[]
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([drawnAt])
+  @@index([date])
 }
 
 model prizes {
