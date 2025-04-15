@@ -189,15 +189,15 @@ body {
 
   /* Form styling */
   .form-container {
-    @apply bg-white shadow overflow-hidden sm:rounded-lg p-6 dark:bg-gray-800;
+    @apply bg-white shadow overflow-hidden sm:rounded-lg p-4 sm:p-6 dark:bg-gray-800;
   }
 
   .form-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4;
+    @apply grid grid-cols-1 md:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4;
   }
 
   .form-section {
-    @apply space-y-6;
+    @apply space-y-4 sm:space-y-6;
   }
 
   .form-field {
@@ -205,12 +205,12 @@ body {
   }
 
   .form-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2;
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2;
   }
 
   .form-input {
-    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-3 px-4;
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-sm sm:text-base
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2 sm:py-3 px-3 sm:px-4;
   }
 
   /* Width variants */
@@ -223,13 +223,13 @@ body {
   }
 
   .form-textarea {
-    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white min-h-[120px] py-3 px-4;
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-sm sm:text-base
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white min-h-[120px] py-2 sm:py-3 px-3 sm:px-4;
   }
 
   .form-select {
-    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-3 px-4;
+    @apply block w-full rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-sm sm:text-base
+           border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2 sm:py-3 px-3 sm:px-4;
   }
 
   .form-checkbox {
@@ -254,17 +254,17 @@ body {
   }
 
   .form-actions {
-    @apply flex justify-end space-x-3 pt-8 mt-6;
+    @apply flex flex-col sm:flex-row justify-end gap-3 pt-6 mt-6;
   }
 
   .form-submit-btn {
-    @apply inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-3 px-6 text-sm 
+    @apply w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 sm:py-3 px-4 sm:px-6 text-sm 
            font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 
            focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-200;
   }
 
   .form-cancel-btn {
-    @apply rounded-md border border-gray-300 bg-white py-3 px-6 text-sm font-medium text-gray-700 
+    @apply w-full sm:w-auto rounded-md border border-gray-300 bg-white py-2 sm:py-3 px-4 sm:px-6 text-sm font-medium text-gray-700 
            shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 
            focus:ring-offset-2 transition-colors duration-200;
   }

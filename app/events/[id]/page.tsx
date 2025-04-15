@@ -96,11 +96,11 @@ export default async function EventPage({ params }: EventPageProps) {
               
               <div className="flex gap-4">
                 <div className="enhanced-box flex-1">
-                  <div className="enhanced-box-header flex justify-between items-center">
-                    <h3 className="enhanced-box-title">
+                  <div className="enhanced-box-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 px-4 py-3 sm:px-6">
+                    <h3 className="enhanced-box-title text-base sm:text-lg">
                       Event Summary
                     </h3>
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${
                       event.status === 'DRAFT' 
                         ? 'bg-gray-100 text-gray-800' 
                         : event.status === 'OPEN' 

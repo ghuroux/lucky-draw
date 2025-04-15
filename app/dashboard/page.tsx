@@ -235,34 +235,22 @@ export default async function Dashboard() {
             ) : (
               <div>
                 {/* Mobile view - Cards instead of table */}
-                <div className="block sm:hidden">
+                <div className="block sm:hidden space-y-4">
                   {events.slice(0, 4).map((event) => (
-                    <div key={event.id} className="px-4 py-4 border-b border-gray-200 last:border-b-0">
-                      <div className="flex justify-between items-start">
-                        <Link href={`/events/${event.id}`} className="text-indigo-600 hover:text-indigo-900 font-medium">
-                          {event.name}
-                        </Link>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          event.drawnAt ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {event.drawnAt ? 'Drawn' : 'Pending'}
-                        </span>
-                      </div>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
-                        <div>
-                          <span className="font-medium">Date:</span> {formatDate(event.date ? event.date.toString() : null, false, event.status)}
+                    <div key={event.id} className="px-4 py-4 border border-gray-200 rounded-lg shadow-sm">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-start">
+                          <Link href={`/events/${event.id}`} className="text-indigo-600 hover:text-indigo-900 font-medium text-base">
+                            {event.name}
+                          </Link>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                            event.drawnAt ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {event.drawnAt ? 'Drawn' : 'Pending'}
+                          </span>
                         </div>
-                        <div>
-                          <span className="font-medium">Entry Cost:</span> {formatCurrency(event.entryCost)}
-                        </div>
-                        <div>
-                          <span className="font-medium">Entries:</span> {event._count.entries}
-                        </div>
-                        <div>
-                          <span className="font-medium">Winners:</span> {event.drawnAt 
-                            ? (event._count.prizes > 0 ? `${event._count.prizes} winner${event._count.prizes !== 1 ? 's' : ''}` : 'No winners')
-                            : (event.prizes?.length > 0 ? `${event.prizes.length} planned` : 'No prizes')
-                          }
+                        <div className="text-sm text-gray-500">
+                          {event.entries.length} entries
                         </div>
                       </div>
                     </div>
