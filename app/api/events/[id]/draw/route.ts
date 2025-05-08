@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
-import { prisma } from '@/app/lib/prisma';
 import { getServerUserRole } from '@/app/lib/auth-server';
-import { Prisma, EventStatus } from '@prisma/client';
+
+// Define EventStatus enum locally
+enum EventStatus {
+  DRAFT = 'DRAFT',
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  DRAWN = 'DRAWN'
+}
 
 interface Params {
   params: {
@@ -72,8 +78,8 @@ export async function POST(req: NextRequest, context: Params) {
       );
     }
     
-    // Get prizes for the event using the Prisma client directly
-    const prizes = await prisma.prizes.findMany({
+    // Get prizes for the event using the DB utility
+    const prizes = await db.prize.findMany({
       where: { eventId },
       orderBy: { order: 'asc' }
     });
@@ -139,8 +145,8 @@ export async function POST(req: NextRequest, context: Params) {
       // Record that this entrant has won
       selectedEntrantIds.add(winningEntry.entrantId);
       
-      // Associate this entry with the prize using the DB wrapper
-      await prisma.prizes.update({
+      // Associate this entry with the prize using the DB utility
+      await db.prize.update({
         where: { id: prize.id },
         data: { winningEntryId: winningEntry.id.toString() }
       });

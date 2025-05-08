@@ -1,13 +1,18 @@
 'use client';
 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '@/types/supabase';
 import { redirect } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 
-// Create a Supabase client for use in browser components
+// Singleton pattern for Supabase client
+let supabaseClientInstance: ReturnType<typeof createClientComponentClient> | null = null;
+
+// Create a singleton Supabase client for use in browser components
 export const createClientSupabase = () => {
-  return createClientComponentClient<Database>();
+  if (!supabaseClientInstance) {
+    supabaseClientInstance = createClientComponentClient();
+  }
+  return supabaseClientInstance;
 };
 
 /**

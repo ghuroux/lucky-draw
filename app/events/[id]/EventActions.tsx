@@ -25,84 +25,27 @@ export default function EventActions({ event }: EventActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const openEvent = async () => {
-    if (confirm('Are you sure you want to open this event for entries?')) {
-      setIsLoading(true);
-      setError('');
-      
-      try {
-        const response = await fetch(`/api/events/${event.id}/open`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to open event');
-        }
-        
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
+  const handleStatusChange = async (newStatus: EventStatus) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/events/${event.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-  const closeEntries = async () => {
-    if (confirm('Are you sure you want to close entries for this event?')) {
-      setIsLoading(true);
-      setError('');
-      
-      try {
-        const response = await fetch(`/api/events/${event.id}/close`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to close entries');
-        }
-        
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to update event status');
       }
-    }
-  };
 
-  const performDraw = async () => {
-    if (confirm('Are you sure you want to perform the draw? This action cannot be undone.')) {
-      setIsLoading(true);
-      setError('');
-      
-      try {
-        const response = await fetch(`/api/events/${event.id}/draw`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to perform draw');
-        }
-        
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
+      router.refresh();
+    } catch (error) {
+      console.error('Error updating event status:', error);
+      alert('Failed to update event status. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -137,7 +80,7 @@ export default function EventActions({ event }: EventActionsProps) {
             </Link>
             
             <button
-              onClick={openEvent}
+              onClick={() => handleStatusChange(EventStatus.OPEN)}
               disabled={isLoading}
               className="w-full btn-enhanced-green"
             >
@@ -147,29 +90,42 @@ export default function EventActions({ event }: EventActionsProps) {
         )}
         
         {event.status === 'OPEN' && (
-          <button
-            onClick={closeEntries}
-            disabled={isLoading}
-            className="w-full btn-enhanced-orange"
-          >
-            {isLoading ? 'Closing entries...' : 'Close Entries'}
-          </button>
+          <>
+            <button
+              onClick={() => handleStatusChange(EventStatus.CLOSED)}
+              disabled={isLoading}
+              className="w-full btn-enhanced-orange"
+            >
+              {isLoading ? 'Closing entries...' : 'Close Entries'}
+            </button>
+            <button
+              onClick={() => router.push(`/events/${event.id}/draw`)}
+              disabled={isLoading}
+              className="w-full btn-enhanced-secondary"
+            >
+              {isLoading ? 'Performing draw...' : 'Perform Draw'}
+            </button>
+          </>
         )}
         
         {event.status === 'CLOSED' && (
           <button
-            onClick={performDraw}
+            onClick={() => router.push(`/events/${event.id}/draw`)}
             disabled={isLoading}
-            className="w-full btn-enhanced-green"
+            className="w-full btn-enhanced-primary"
           >
-            {isLoading ? 'Performing draw...' : 'Perform Draw'}
+            {isLoading ? 'Performing draw...' : 'Start Draw'}
           </button>
         )}
         
         {event.status === 'DRAWN' && (
-          <div className="text-center py-2 text-green-600 font-medium">
-            Winner has been drawn!
-          </div>
+          <button
+            onClick={() => router.push(`/events/${event.id}/winners`)}
+            disabled={isLoading}
+            className="w-full btn-enhanced-secondary"
+          >
+            {isLoading ? 'Viewing winners...' : 'View Winners'}
+          </button>
         )}
         
         <div className="mt-2 text-sm text-gray-600">

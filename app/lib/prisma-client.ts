@@ -1,21 +1,31 @@
 import { prisma } from './prisma';
+import { Prisma, PrismaClient } from '.prisma/client';
 
-// Define the type for prisma with snake_case model names
-type PrismaWithSnakeCaseModels = typeof prisma & {
-  admin_users: any;
-  events: any;
-  entries: any;
-  entrants: any;
-  entry_packages: any;
-  prizes: any;
+// Define proper types for our models using Prisma's generated types
+type PrismaModels = {
+  admin_users: Prisma.admin_usersDelegate;
+  events: Prisma.eventsDelegate;
+  entries: Prisma.entriesDelegate;
+  entrants: Prisma.entrantsDelegate;
+  entry_packages: Prisma.entry_packagesDelegate;
+  prizes: Prisma.prizesDelegate;
 };
 
-// Cast prisma to use snake_case model names
-export const prismaClient = prisma as PrismaWithSnakeCaseModels;
+// Type for our db utility that maps camelCase to snake_case
+export type DbClient = {
+  adminUser: PrismaModels['admin_users'];
+  event: PrismaModels['events'];
+  entry: PrismaModels['entries'];
+  entrant: PrismaModels['entrants'];
+  entryPackage: PrismaModels['entry_packages'];
+  prize: PrismaModels['prizes'];
+};
 
-// Export a convenient object that maps camelCase names to snake_case models
-// This allows existing code to continue working with minimal changes
-export const db = {
+// Cast prisma to use snake_case model names with proper types
+const prismaClient = prisma as PrismaClient & PrismaModels;
+
+// Export a properly typed object that maps camelCase names to snake_case models
+export const db: DbClient = {
   adminUser: prismaClient.admin_users,
   event: prismaClient.events,
   entry: prismaClient.entries,

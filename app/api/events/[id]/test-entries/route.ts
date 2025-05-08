@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
-import { prisma } from '@/app/lib/prisma';
 import { getServerUserRole } from '@/app/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -45,7 +44,7 @@ export async function POST(
     const count = body.count || 200;
     
     // Get existing entrants
-    const entrants = await prisma.entrants.findMany({
+    const entrants = await db.entrant.findMany({
       take: count,
       orderBy: {
         id: 'asc'
@@ -60,7 +59,7 @@ export async function POST(
     }
     
     // Get event packages
-    const packages = await prisma.entry_packages.findMany({
+    const packages = await db.entryPackage.findMany({
       where: { 
         eventId,
         isActive: true
@@ -104,7 +103,7 @@ export async function POST(
     console.log(`Creating ${entries.length} test entries for event ${eventId}`);
     
     // Insert all entries
-    const result = await prisma.entries.createMany({
+    const result = await db.entry.createMany({
       data: entries,
       skipDuplicates: true
     });

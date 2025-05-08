@@ -510,352 +510,354 @@ export default function LiveDrawPage() {
     : null;
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-900 to-green-800 text-white">
-      <header className="relative bg-green-950 py-8 border-b-4 border-yellow-600 shadow-xl">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <div className="relative">
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-white drop-shadow-lg">{event.name}</h1>
-              <div className="mt-2 text-yellow-400 font-serif italic">
-                <span>Live Draw</span>
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-grow bg-gradient-to-b from-green-900 to-green-800 text-white">
+        <header className="relative bg-green-950 py-8 border-b-4 border-yellow-600 shadow-xl">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center">
+              <div className="relative">
+                <h1 className="text-4xl md:text-5xl font-serif font-bold text-white drop-shadow-lg">{event.name}</h1>
+                <div className="mt-2 text-yellow-400 font-serif italic">
+                  <span>Live Draw</span>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-600 text-green-950 px-6 py-3 rounded-md font-serif font-bold text-lg tracking-wider shadow-md">
+                {event.status}
               </div>
             </div>
-            
-            <div className="bg-yellow-600 text-green-950 px-6 py-3 rounded-md font-serif font-bold text-lg tracking-wider shadow-md">
-              {event.status}
-            </div>
           </div>
-        </div>
+          
+          <div className="absolute bottom-0 left-0 w-full h-4 bg-[url('/golf-pattern.png')] bg-repeat-x opacity-20"></div>
+        </header>
         
-        <div className="absolute bottom-0 left-0 w-full h-4 bg-[url('/golf-pattern.png')] bg-repeat-x opacity-20"></div>
-      </header>
-      
-      <main className="container mx-auto px-4 py-8">
-        {/* Top Entrant Recognition */}
-        {topEntrant && currentPrizeIndex === -1 && !drawComplete && (
-          <div className="bg-yellow-600/20 border-2 border-yellow-500 rounded-lg p-6 mb-8 text-center">
-            <div className="text-yellow-300 text-lg font-serif mb-2">Top Entrant</div>
-            <h2 className="text-3xl font-serif font-bold text-white mb-2">
-              {topEntrant.entrant.firstName} {topEntrant.entrant.lastName}
-            </h2>
-            <p className="text-xl text-yellow-100">
-              Thank you for your amazing support with {topEntrant.count} entries!
-            </p>
-          </div>
-        )}
-        
-        {/* Draw in progress UI */}
-        {currentPrizeIndex >= 0 && !drawComplete && (
-          <div className="bg-green-800 rounded-lg p-8 shadow-lg border border-yellow-600/30 mb-8">
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-serif font-bold text-yellow-400">
-                Prize {currentPrizeIndex + 1} of {prizes.length}
+        <main className="container mx-auto px-4 py-8">
+          {/* Top Entrant Recognition */}
+          {topEntrant && currentPrizeIndex === -1 && !drawComplete && (
+            <div className="bg-yellow-600/20 border-2 border-yellow-500 rounded-lg p-6 mb-8 text-center">
+              <div className="text-yellow-300 text-lg font-serif mb-2">Top Entrant</div>
+              <h2 className="text-3xl font-serif font-bold text-white mb-2">
+                {topEntrant.entrant.firstName} {topEntrant.entrant.lastName}
               </h2>
-              <div className="mt-2 mb-6 flex justify-center space-x-1">
-                {prizes.map((p, idx) => (
-                  <div 
-                    key={p.id} 
-                    className={`w-3 h-3 rounded-full ${
-                      idx < currentPrizeIndex ? 'bg-yellow-500' : 
-                      idx === currentPrizeIndex ? 'bg-yellow-300 animate-pulse' : 'bg-gray-500'
-                    }`}
-                  />
-                ))}
-              </div>
+              <p className="text-xl text-yellow-100">
+                Thank you for your amazing support with {topEntrant.count} entries!
+              </p>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-              {/* Current prize display */}
-              <div className="lg:col-span-3">
-                <div className="bg-green-700/60 rounded-lg p-6 border-2 border-yellow-500 shadow-md mb-6">
-                  <div className="flex items-center mb-4">
-                    <TrophyIcon className="h-12 w-12 text-yellow-500 mr-4" />
-                    <h3 className="text-2xl font-serif font-bold text-white">
-                      {currentPrize?.name}
-                    </h3>
-                  </div>
-                  {currentPrize?.description && (
-                    <p className="text-green-100 text-md italic ml-16 mb-4">
-                      {currentPrize.description}
-                    </p>
-                  )}
-                  
-                  {/* Winner reveal section */}
-                  <div className="mt-6 pt-6 border-t border-green-600">
-                    {!currentPrize?.isDrawn ? (
-                      <div className="text-center">
-                        {drawStage === 'ready' && (
-                          <>
-                            <p className="text-yellow-200 mb-4">
-                              Ready to draw a winner for this prize
-                            </p>
-                            <p className="text-green-300 text-sm mb-4">
-                              {availableEntrants ? 
-                                `${availableEntrants.length} eligible entrants with a total of ${totalEntriesInPool} entries` : 
-                                'Loading entrants...'
-                              }
-                            </p>
-                            <button
-                              onClick={drawCurrentPrize}
-                              disabled={isDrawing}
-                              className="px-6 py-3 bg-yellow-600 text-green-950 rounded-md shadow-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 font-bold text-lg"
-                            >
-                              Draw Prize {currentPrizeIndex + 1}: {currentPrize?.name}
-                            </button>
-                          </>
-                        )}
-                        
-                        {(drawStage === 'spinning' || drawStage === 'stopping1' || drawStage === 'stopping2' || drawStage === 'stopping3') && (
-                          <div className="slot-machine-animation">
-                            <div className="bg-green-900/70 rounded-lg p-8 my-4 relative overflow-hidden">
-                              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-green-700/40 to-transparent"></div>
-                              
-                              {/* Status message */}
-                              <p className="text-yellow-300 text-lg mb-4 animate-pulse">
-                                {drawStage === 'spinning' && "Spinning..."}
-                                {drawStage === 'stopping1' && "First column stopping..."}
-                                {drawStage === 'stopping2' && "Second column stopping..."}
-                                {drawStage === 'stopping3' && "And the winner is..."}
+          )}
+          
+          {/* Draw in progress UI */}
+          {currentPrizeIndex >= 0 && !drawComplete && (
+            <div className="bg-green-800 rounded-lg p-8 shadow-lg border border-yellow-600/30 mb-8">
+              <div className="text-center mb-6">
+                <h2 className="text-3xl font-serif font-bold text-yellow-400">
+                  Prize {currentPrizeIndex + 1} of {prizes.length}
+                </h2>
+                <div className="mt-2 mb-6 flex justify-center space-x-1">
+                  {prizes.map((p, idx) => (
+                    <div 
+                      key={p.id} 
+                      className={`w-3 h-3 rounded-full ${
+                        idx < currentPrizeIndex ? 'bg-yellow-500' : 
+                        idx === currentPrizeIndex ? 'bg-yellow-300 animate-pulse' : 'bg-gray-500'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Current prize display */}
+                <div className="lg:col-span-3">
+                  <div className="bg-green-700/60 rounded-lg p-6 border-2 border-yellow-500 shadow-md mb-6">
+                    <div className="flex items-center mb-4">
+                      <TrophyIcon className="h-12 w-12 text-yellow-500 mr-4" />
+                      <h3 className="text-2xl font-serif font-bold text-white">
+                        {currentPrize?.name}
+                      </h3>
+                    </div>
+                    {currentPrize?.description && (
+                      <p className="text-green-100 text-md italic ml-16 mb-4">
+                        {currentPrize.description}
+                      </p>
+                    )}
+                    
+                    {/* Winner reveal section */}
+                    <div className="mt-6 pt-6 border-t border-green-600">
+                      {!currentPrize?.isDrawn ? (
+                        <div className="text-center">
+                          {drawStage === 'ready' && (
+                            <>
+                              <p className="text-yellow-200 mb-4">
+                                Ready to draw a winner for this prize
+                              </p>
+                              <p className="text-green-300 text-sm mb-4">
+                                {availableEntrants ? 
+                                  `${availableEntrants.length} eligible entrants with a total of ${totalEntriesInPool} entries` : 
+                                  'Loading entrants...'
+                                }
+                              </p>
+                              <button
+                                onClick={drawCurrentPrize}
+                                disabled={isDrawing}
+                                className="px-6 py-3 bg-yellow-600 text-green-950 rounded-md shadow-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 font-bold text-lg"
+                              >
+                                Draw Prize {currentPrizeIndex + 1}: {currentPrize?.name}
+                              </button>
+                            </>
+                          )}
+                          
+                          {(drawStage === 'spinning' || drawStage === 'stopping1' || drawStage === 'stopping2' || drawStage === 'stopping3') && (
+                            <div className="slot-machine-animation">
+                              <div className="bg-green-900/70 rounded-lg p-8 my-4 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-green-700/40 to-transparent"></div>
+                                
+                                {/* Status message */}
+                                <p className="text-yellow-300 text-lg mb-4 animate-pulse">
+                                  {drawStage === 'spinning' && "Spinning..."}
+                                  {drawStage === 'stopping1' && "First column stopping..."}
+                                  {drawStage === 'stopping2' && "Second column stopping..."}
+                                  {drawStage === 'stopping3' && "And the winner is..."}
+                                </p>
+                                
+                                {/* Slot machine reels */}
+                                <div className="slot-machine flex justify-between gap-1 p-1 bg-green-950 rounded-lg border-2 border-yellow-600">
+                                  {/* Column 1 */}
+                                  <div className={`slot-column ${drawStage !== 'spinning' ? 'stopped' : ''}`}>
+                                    {slotColumns[0].map((name, index) => (
+                                      <div 
+                                        key={`col1-${index}`}
+                                        className="slot-item"
+                                      >
+                                        {name.split(' ')[0]}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Column 2 */}
+                                  <div className={`slot-column ${drawStage !== 'spinning' && drawStage !== 'stopping1' ? 'stopped' : ''}`}>
+                                    {slotColumns[1].map((name, index) => (
+                                      <div 
+                                        key={`col2-${index}`}
+                                        className="slot-item"
+                                      >
+                                        {name.split(' ')[0]}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Column 3 */}
+                                  <div className={`slot-column ${drawStage === 'stopping3' ? 'stopped' : ''}`}>
+                                    {slotColumns[2].map((name, index) => (
+                                      <div 
+                                        key={`col3-${index}`}
+                                        className={`slot-item ${
+                                          drawStage === 'stopping3' && index === Math.floor(slotColumns[2].length / 2) ? 'winner' : ''
+                                        }`}
+                                      >
+                                        {name.split(' ')[0]}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                {/* Light effects during stopping */}
+                                {drawStage === 'stopping3' && (
+                                  <div className="absolute inset-0 win-flash"></div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <h4 className="text-xl font-serif mb-2 text-yellow-300">Winner</h4>
+                          {currentPrize.winner ? (
+                            <div className="winner-reveal">
+                              <div className="text-4xl font-bold text-white mb-2 glow-text">
+                                {currentPrize.winner.firstName} {currentPrize.winner.lastName}
+                              </div>
+                              <p className="text-sm text-green-200 mt-1">
+                                Entry ID: {currentPrize.winner.entryId}
                               </p>
                               
-                              {/* Slot machine reels */}
-                              <div className="slot-machine flex justify-between gap-1 p-1 bg-green-950 rounded-lg border-2 border-yellow-600">
-                                {/* Column 1 */}
-                                <div className={`slot-column ${drawStage !== 'spinning' ? 'stopped' : ''}`}>
-                                  {slotColumns[0].map((name, index) => (
-                                    <div 
-                                      key={`col1-${index}`}
-                                      className="slot-item"
-                                    >
-                                      {name.split(' ')[0]}
-                                    </div>
-                                  ))}
-                                </div>
-                                
-                                {/* Column 2 */}
-                                <div className={`slot-column ${drawStage !== 'spinning' && drawStage !== 'stopping1' ? 'stopped' : ''}`}>
-                                  {slotColumns[1].map((name, index) => (
-                                    <div 
-                                      key={`col2-${index}`}
-                                      className="slot-item"
-                                    >
-                                      {name.split(' ')[0]}
-                                    </div>
-                                  ))}
-                                </div>
-                                
-                                {/* Column 3 */}
-                                <div className={`slot-column ${drawStage === 'stopping3' ? 'stopped' : ''}`}>
-                                  {slotColumns[2].map((name, index) => (
-                                    <div 
-                                      key={`col3-${index}`}
-                                      className={`slot-item ${
-                                        drawStage === 'stopping3' && index === Math.floor(slotColumns[2].length / 2) ? 'winner' : ''
-                                      }`}
-                                    >
-                                      {name.split(' ')[0]}
-                                    </div>
-                                  ))}
-                                </div>
+                              {/* Replace visible email notification UI with hidden notification process */}
+                              <div className="hidden">
+                                {emailStatus[currentPrizeIndex] === 'error' && (
+                                  <button onClick={() => sendWinnerEmail(currentPrizeIndex)} className="hidden">
+                                    Retry
+                                  </button>
+                                )}
                               </div>
                               
-                              {/* Light effects during stopping */}
-                              {drawStage === 'stopping3' && (
-                                <div className="absolute inset-0 win-flash"></div>
-                              )}
+                              <button
+                                onClick={moveToNextPrize}
+                                className="mt-6 px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors font-bold"
+                              >
+                                {currentPrizeIndex < prizes.length - 1 
+                                  ? 'Continue to Next Prize' 
+                                  : 'Complete Draw'}
+                              </button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <h4 className="text-xl font-serif mb-2 text-yellow-300">Winner</h4>
-                        {currentPrize.winner ? (
-                          <div className="winner-reveal">
-                            <div className="text-4xl font-bold text-white mb-2 glow-text">
-                              {currentPrize.winner.firstName} {currentPrize.winner.lastName}
-                            </div>
-                            <p className="text-sm text-green-200 mt-1">
-                              Entry ID: {currentPrize.winner.entryId}
+                          ) : (
+                            <p className="text-red-300 hidden">
+                              No valid entries found for this prize.
                             </p>
-                            
-                            {/* Replace visible email notification UI with hidden notification process */}
-                            <div className="hidden">
-                              {emailStatus[currentPrizeIndex] === 'error' && (
-                                <button onClick={() => sendWinnerEmail(currentPrizeIndex)} className="hidden">
-                                  Retry
-                                </button>
-                              )}
-                            </div>
-                            
-                            <button
-                              onClick={moveToNextPrize}
-                              className="mt-6 px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors font-bold"
-                            >
-                              {currentPrizeIndex < prizes.length - 1 
-                                ? 'Continue to Next Prize' 
-                                : 'Complete Draw'}
-                            </button>
-                          </div>
-                        ) : (
-                          <p className="text-red-300 hidden">
-                            No valid entries found for this prize.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Upcoming prizes */}
-              <div className="lg:col-span-2">
-                <div className="bg-green-800/80 rounded-lg p-4 border border-green-700">
-                  <h4 className="text-lg font-serif mb-3 text-yellow-300">
-                    {currentPrizeIndex < prizes.length - 1 ? 'Upcoming Prizes' : 'Final Prize'}
-                  </h4>
-                  
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {prizes.slice(currentPrizeIndex + 1).map((prize, idx) => (
-                      <div 
-                        key={prize.id} 
-                        className="bg-green-700/40 rounded p-3 border border-green-600 flex items-center opacity-70"
-                      >
-                        <span className="text-gray-300 text-sm mr-2">
-                          {currentPrizeIndex + idx + 2}.
-                        </span>
-                        <span className="font-medium">{prize.name}</span>
-                      </div>
-                    ))}
-                    
-                    {currentPrizeIndex === prizes.length - 1 && (
-                      <div className="text-center text-green-200 text-sm italic">
-                        This is the final prize
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Draw complete UI */}
-        {drawComplete && (
-          <div className="bg-yellow-600/20 border-2 border-yellow-500 rounded-lg p-8 mb-8 text-center">
-            <CheckCircleIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-3xl font-serif font-bold text-white mb-4">
-              Draw Complete!
-            </h2>
-            <p className="text-xl text-yellow-100 mb-6">
-              All prizes have been drawn. Congratulations to all winners!
-            </p>
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={resetDraw}
-                className="px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors"
-              >
-                Reset Draw
-              </button>
-              <Link 
-                href={`/events/${eventId}/presentation`}
-                className="px-6 py-3 bg-green-700 text-white rounded-md shadow hover:bg-green-800 transition-colors"
-              >
-                Return to Leaderboard
-              </Link>
-            </div>
-          </div>
-        )}
-        
-        {/* Initial draw state */}
-        {currentPrizeIndex === -1 && !drawComplete && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Left side: Prize List */}
-            <div className="lg:col-span-3">
-              <div className="bg-green-800 rounded-lg shadow-lg border border-yellow-600/30 mb-4">
-                <div className="bg-yellow-600 text-green-950 p-4">
-                  <h2 className="text-2xl font-serif font-bold">Prizes to Draw</h2>
-                </div>
-                
-                <div className="p-4 space-y-4">
-                  {prizes.length > 0 ? (
-                    prizes.map((prize, index) => (
-                      <div 
-                        key={prize.id} 
-                        className="bg-green-700/60 rounded-lg p-5 border border-green-600 shadow-md"
-                      >
-                        <div className="flex items-center mb-3">
-                          <TrophyIcon className="h-8 w-8 text-yellow-500 mr-3" />
-                          <h3 className="text-xl font-serif font-bold text-white">
-                            Prize #{index + 1}: {prize.name}
-                          </h3>
+                          )}
                         </div>
-                        {prize.description && (
-                          <p className="text-green-100 text-sm italic ml-11">
-                            {prize.description}
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center py-8 text-lg text-yellow-200">
-                      No prizes have been set up for this event.
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              <Link 
-                href={`/events/${eventId}/presentation`}
-                className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors text-sm"
-              >
-                Return to Leaderboard
-              </Link>
-            </div>
-            
-            {/* Right side: Draw Controls */}
-            <div className="lg:col-span-2">
-              <div className="bg-green-800 rounded-lg p-8 shadow-lg border border-yellow-600/30 sticky top-4">
-                <h2 className="text-3xl font-serif mb-6 text-center text-yellow-400">Start the Draw</h2>
-                
-                <div className="text-center mb-8">
-                  <div className="bg-green-700/40 rounded-lg p-4 mb-6">
-                    <div className="text-lg mb-2">Event Summary</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-green-100">Total Entries:</div>
-                      <div className="font-bold">{event.entries?.length || 0}</div>
-                      <div className="text-green-100">Number of Prizes:</div>
-                      <div className="font-bold">{prizes.length}</div>
-                      <div className="text-green-100">Prize Pool:</div>
-                      <div className="font-bold">
-                        {formatCurrency(event.prizePool || (event.entryCost * (event.entries?.length || 0)))}
-                      </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <p className="text-yellow-300 italic mb-6">
-                    Each prize will be drawn individually. Winners will be selected at random and cannot be changed.
-                  </p>
-                  
-                  <button
-                    onClick={startDraw}
-                    disabled={prizes.length === 0}
-                    className="w-full px-8 py-4 bg-yellow-600 text-green-950 rounded-lg shadow-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 font-bold text-xl tracking-wider"
-                  >
-                    Begin Prize Draw
-                  </button>
+                </div>
+                
+                {/* Upcoming prizes */}
+                <div className="lg:col-span-2">
+                  <div className="bg-green-800/80 rounded-lg p-4 border border-green-700">
+                    <h4 className="text-lg font-serif mb-3 text-yellow-300">
+                      {currentPrizeIndex < prizes.length - 1 ? 'Upcoming Prizes' : 'Final Prize'}
+                    </h4>
+                    
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {prizes.slice(currentPrizeIndex + 1).map((prize, idx) => (
+                        <div 
+                          key={prize.id} 
+                          className="bg-green-700/40 rounded p-3 border border-green-600 flex items-center opacity-70"
+                        >
+                          <span className="text-gray-300 text-sm mr-2">
+                            {currentPrizeIndex + idx + 2}.
+                          </span>
+                          <span className="font-medium">{prize.name}</span>
+                        </div>
+                      ))}
+                      
+                      {currentPrizeIndex === prizes.length - 1 && (
+                        <div className="text-center text-green-200 text-sm italic">
+                          This is the final prize
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+          
+          {/* Draw complete UI */}
+          {drawComplete && (
+            <div className="bg-yellow-600/20 border-2 border-yellow-500 rounded-lg p-8 mb-8 text-center">
+              <CheckCircleIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+              <h2 className="text-3xl font-serif font-bold text-white mb-4">
+                Draw Complete!
+              </h2>
+              <p className="text-xl text-yellow-100 mb-6">
+                All prizes have been drawn. Congratulations to all winners!
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={resetDraw}
+                  className="px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors"
+                >
+                  Reset Draw
+                </button>
+                <Link 
+                  href={`/events/${eventId}/presentation`}
+                  className="px-6 py-3 bg-green-700 text-white rounded-md shadow hover:bg-green-800 transition-colors"
+                >
+                  Return to Leaderboard
+                </Link>
+              </div>
+            </div>
+          )}
+          
+          {/* Initial draw state */}
+          {currentPrizeIndex === -1 && !drawComplete && (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {/* Left side: Prize List */}
+              <div className="lg:col-span-3">
+                <div className="bg-green-800 rounded-lg shadow-lg border border-yellow-600/30 mb-4">
+                  <div className="bg-yellow-600 text-green-950 p-4">
+                    <h2 className="text-2xl font-serif font-bold">Prizes to Draw</h2>
+                  </div>
+                  
+                  <div className="p-4 space-y-4">
+                    {prizes.length > 0 ? (
+                      prizes.map((prize, index) => (
+                        <div 
+                          key={prize.id} 
+                          className="bg-green-700/60 rounded-lg p-5 border border-green-600 shadow-md"
+                        >
+                          <div className="flex items-center mb-3">
+                            <TrophyIcon className="h-8 w-8 text-yellow-500 mr-3" />
+                            <h3 className="text-xl font-serif font-bold text-white">
+                              Prize #{index + 1}: {prize.name}
+                            </h3>
+                          </div>
+                          {prize.description && (
+                            <p className="text-green-100 text-sm italic ml-11">
+                              {prize.description}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center py-8 text-lg text-yellow-200">
+                        No prizes have been set up for this event.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <Link 
+                  href={`/events/${eventId}/presentation`}
+                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors text-sm"
+                >
+                  Return to Leaderboard
+                </Link>
+              </div>
+              
+              {/* Right side: Draw Controls */}
+              <div className="lg:col-span-2">
+                <div className="bg-green-800 rounded-lg p-8 shadow-lg border border-yellow-600/30 sticky top-4">
+                  <h2 className="text-3xl font-serif mb-6 text-center text-yellow-400">Start the Draw</h2>
+                  
+                  <div className="text-center mb-8">
+                    <div className="bg-green-700/40 rounded-lg p-4 mb-6">
+                      <div className="text-lg mb-2">Event Summary</div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-green-100">Total Entries:</div>
+                        <div className="font-bold">{event.entries?.length || 0}</div>
+                        <div className="text-green-100">Number of Prizes:</div>
+                        <div className="font-bold">{prizes.length}</div>
+                        <div className="text-green-100">Prize Pool:</div>
+                        <div className="font-bold">
+                          {formatCurrency(event.prizePool || (event.entryCost * (event.entries?.length || 0)))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-yellow-300 italic mb-6">
+                      Each prize will be drawn individually. Winners will be selected at random and cannot be changed.
+                    </p>
+                    
+                    <button
+                      onClick={startDraw}
+                      disabled={prizes.length === 0}
+                      className="w-full px-8 py-4 bg-yellow-600 text-green-950 rounded-lg shadow-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 font-bold text-xl tracking-wider"
+                    >
+                      Begin Prize Draw
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
       
-      <footer className="bg-green-950 text-center py-6 border-t-4 border-yellow-600 mt-12">
+      <footer className="bg-green-950 text-center py-6 border-t-4 border-yellow-600">
         <p className="font-serif text-yellow-400">© {new Date().getFullYear()} Lucky Draw | Event Presentation</p>
       </footer>
-      
-      {/* Add more advanced animations */}
+
+      {/* Add slot machine animations */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }

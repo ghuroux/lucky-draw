@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       where: {
         entries: {
           some: {
-            entrant: {
+            entrants: {
               email: userEmail
             }
           }

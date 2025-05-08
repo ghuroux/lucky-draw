@@ -59,19 +59,16 @@ export default async function EventPage({ params }: EventPageProps) {
     const isEventDrawn = event.status === EventStatus.DRAWN;
     
     // For the entries list, we need to format the data to match the component's expected structure
-    const formattedEntries = event.entries.map(entry => {
-      // Make sure we have the entrant data regardless of whether it's in entrants or entrant
-      const entrantData = entry.entrants || entry.entrant || {};
-      
-      return {
-        ...entry,
-        entrant: {
-          firstName: entrantData.firstName || '',
-          lastName: entrantData.lastName || '',
-          email: entrantData.email || ''
-        }
-      };
-    });
+    const formattedEntries = event.entries.map(entry => ({
+      id: entry.id,
+      entryNumber: entry.id,
+      createdAt: entry.createdAt.toString(),
+      entrant: {
+        firstName: entry.entrants?.firstName || '',
+        lastName: entry.entrants?.lastName || '',
+        email: entry.entrants?.email || ''
+      }
+    }));
     
     return (
       <ClientOnly>
@@ -129,8 +126,8 @@ export default async function EventPage({ params }: EventPageProps) {
                         <p className="text-xl font-bold text-green-600">{formatCurrency(event.entryCost)}</p>
                       </div>
                       <div className="p-4 text-center">
-                        <p className="text-xs font-medium text-gray-500">Status</p>
-                        <p className="text-xl font-bold text-gray-900">{event.status}</p>
+                        <p className="text-xs font-medium text-gray-500">Total Entries</p>
+                        <p className="text-xl font-bold text-gray-900">{formattedEntries.length}</p>
                       </div>
                     </div>
                     
@@ -155,11 +152,11 @@ export default async function EventPage({ params }: EventPageProps) {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-500">Created</p>
-                            <p className="text-sm text-gray-900">{new Date(event.createdAt).toLocaleDateString()}</p>
+                            <p className="text-sm text-gray-900">{formatDate(event.createdAt.toString())}</p>
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-500">Last Updated</p>
-                            <p className="text-sm text-gray-900">{new Date(event.updatedAt).toLocaleDateString()}</p>
+                            <p className="text-sm text-gray-900">{formatDate(event.updatedAt.toString())}</p>
                           </div>
                         </div>
                       </div>
@@ -201,7 +198,8 @@ export default async function EventPage({ params }: EventPageProps) {
                               </span>
                             </div>
                             <div className="px-3 pb-3">
-                              <p className="text-sm text-gray-500">{formatCurrency(pkg.cost)}</p>
+                              <p className="text-lg font-bold text-green-600">{formatCurrency(pkg.cost)}</p>
+                              <p className="text-sm text-gray-500 mt-1">{pkg.quantity} entries for {formatCurrency(pkg.cost)}</p>
                             </div>
                           </div>
                         ))}
@@ -221,17 +219,7 @@ export default async function EventPage({ params }: EventPageProps) {
                     <div className="enhanced-box-content">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {event.prizes.map(prize => (
-                          <div key={prize.id} className="enhanced-box bg-gray-50">
-                            <div className="p-3">
-                              <p className="text-sm font-medium text-gray-900">#{prize.order + 1}: {prize.name}</p>
-                              {prize.description && (
-                                <p className="text-sm text-gray-500 mt-1">{prize.description}</p>
-                              )}
-                              {prize.winningEntryId && (
-                                <p className="text-xs font-medium text-green-600 mt-2">Winner selected</p>
-                              )}
-                            </div>
-                          </div>
+                          <PrizeDisplay key={prize.id} prize={prize} />
                         ))}
                       </div>
                     </div>
