@@ -18,7 +18,7 @@ export default function AdminLayout({ children, title = 'Lucky Draw' }: AdminLay
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { role, isLoading: roleLoading } = useUserRole();
+  const { role, loading: roleLoading } = useUserRole();
 
   // Load user on initial mount
   useEffect(() => {
@@ -202,15 +202,6 @@ export default function AdminLayout({ children, title = 'Lucky Draw' }: AdminLay
           </div>
         </div>
       </div>
-      
-      {/* Page heading */}
-      {title && (
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          </div>
-        </header>
-      )}
       
       {/* Page content */}
       <main>

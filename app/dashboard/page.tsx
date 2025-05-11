@@ -3,7 +3,6 @@ import { db } from '@/app/lib/prisma-client';
 import AdminLayout from '@/app/components/AdminLayout';
 import ClientOnly from '@/app/components/ClientOnly';
 import { formatDate, formatCurrency } from '@/app/utils/helpers';
-import TestDataButtons from '@/app/components/TestDataButtons';
 
 // Make this a server component
 export default async function Dashboard() {
@@ -196,11 +195,6 @@ export default async function Dashboard() {
             </Link>
           </div>
           
-          {/* Test Data Buttons */}
-          <div className="mb-6">
-            <TestDataButtons />
-          </div>
-
           {/* Recent Events Section */}
           <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
             <div className="px-4 py-5 sm:px-6 flex justify-between items-center">

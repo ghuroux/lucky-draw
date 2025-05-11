@@ -9,7 +9,6 @@ import EventActions from './EventActions';
 import { EventStatus } from '@prisma/client';
 import PrizeDisplay from '@/app/components/PrizeDisplay';
 import PrizeWinners from '@/app/components/PrizeWinners';
-import TestDataButtons from '@/app/components/TestDataButtons';
 import EntryFormSection from './EntryFormSection';
 
 interface EventPageProps {
@@ -77,7 +76,6 @@ export default async function EventPage({ params }: EventPageProps) {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-semibold text-gray-900">{event.name}</h1>
-                <TestDataButtons eventId={event.id} />
               </div>
 
               {/* Add Entry Form - shown only if the event is open */}
