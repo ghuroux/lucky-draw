@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { debounce } from 'lodash';
 
 // Helper function for formatting currency
@@ -37,6 +37,7 @@ const countryCodes = [
 
 export default function TabletCapturePage() {
   const params = useParams();
+  const router = useRouter();
   const eventId = params.id;
   
   const [event, setEvent] = useState<any>(null);
@@ -326,6 +327,17 @@ export default function TabletCapturePage() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* Back button */}
+      <button 
+        onClick={() => router.push(`/events/${eventId}`)} 
+        className="absolute top-4 left-4 z-20 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition-colors duration-200"
+        aria-label="Back to event"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </button>
+
       <div className="relative overflow-hidden">
         {/* Banner with 3D effect */}
         <div className="relative bg-blue-600 py-8 shadow-md transform skew-y-0 z-10">
@@ -644,11 +656,6 @@ export default function TabletCapturePage() {
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Footer with Golf-themed elements */}
-      <div className="bg-blue-800 text-white py-4 text-center">
-        <p className="text-sm">© {new Date().getFullYear()} {event.name} - All Rights Reserved</p>
       </div>
       
       {/* CSS for animations */}
