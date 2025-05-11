@@ -192,13 +192,9 @@ export default function TabletCapturePage() {
       // Base package cost
       total += selectedPackage.price || selectedPackage.cost || 0;
       
-      // Cost of additional entries at package rate
+      // Cost of additional entries at the same rate as the selected package
       if (additionalEntries > 0) {
-        const entryCount = selectedPackage.entryCount || selectedPackage.quantity || 1;
-        if (entryCount > 0) {
-          const pricePerEntry = (selectedPackage.price || selectedPackage.cost || 0) / entryCount;
-          total += additionalEntries * pricePerEntry;
-        }
+        total += additionalEntries * (selectedPackage.price || selectedPackage.cost || 0);
       }
     } else {
       // Regular entry price
@@ -582,7 +578,7 @@ export default function TabletCapturePage() {
                           </button>
                         </div>
                         <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-700 transition-colors">
-                          Add extra entries at {formatCurrency(pricePerEntry)} each
+                          Add extra entries at {formatCurrency(selectedPackage?.price || selectedPackage?.cost || 0)} each
                         </p>
                       </div>
                     ) : (
@@ -632,7 +628,7 @@ export default function TabletCapturePage() {
                           <div className="mt-3 px-4 py-2 bg-blue-50 rounded-md text-sm text-gray-600">
                             <div className="font-medium">{selectedPackage.name || `${selectedPackage.quantity} Entries Package`}: {formatCurrency(selectedPackage.price || selectedPackage.cost)}</div>
                             {additionalEntries > 0 && (
-                              <div className="mt-1">Additional entries: {additionalEntries} × {formatCurrency(pricePerEntry)} = {formatCurrency(additionalEntries * pricePerEntry)}</div>
+                              <div className="mt-1">Additional entries: {additionalEntries} × {formatCurrency(selectedPackage.price || selectedPackage.cost)} = {formatCurrency(additionalEntries * (selectedPackage.price || selectedPackage.cost))}</div>
                             )}
                           </div>
                         )}
