@@ -486,7 +486,7 @@ export default function TabletCapturePage() {
                       <div className="flex shadow-sm rounded-lg overflow-hidden group-hover:shadow transition-shadow">
                         <div className="relative w-[100px]">
                           <select
-                            className="w-full appearance-none p-3 pl-3 pr-8 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                            className="h-full w-full appearance-none p-3 pl-3 pr-8 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
                             value={countryCode}
                             onChange={(e) => setCountryCode(e.target.value)}
                           >
