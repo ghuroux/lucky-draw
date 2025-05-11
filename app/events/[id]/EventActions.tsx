@@ -74,7 +74,7 @@ export default function EventActions({ event }: EventActionsProps) {
           <>
             <Link
               href={`/events/${event.id}/edit`}
-              className="block w-full btn-enhanced-blue"
+              className="flex items-center justify-center w-full btn-enhanced-blue"
             >
               Edit Event
             </Link>

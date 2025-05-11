@@ -126,7 +126,8 @@ export async function PUT(req: NextRequest, context: { params: Params }) {
       description: eventData.description,
       date: eventData.date ? new Date(eventData.date) : null,
       drawTime: eventData.drawTime,
-      entryCost: parseFloat(eventData.entryCost)
+      entryCost: parseFloat(eventData.entryCost),
+      prizePool: eventData.prizePool ? parseFloat(eventData.prizePool) : null
     });
     
     // Update the event - removed numberOfWinners field
@@ -138,6 +139,7 @@ export async function PUT(req: NextRequest, context: { params: Params }) {
         date: eventData.date ? new Date(eventData.date) : null,
         drawTime: eventData.drawTime,
         entryCost: parseFloat(eventData.entryCost),
+        prizePool: eventData.prizePool ? parseFloat(eventData.prizePool) : null,
       },
     });
     
