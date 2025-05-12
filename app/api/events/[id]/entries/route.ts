@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/lib/prisma-client';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyEventUpdate } from '../stream/route';
+import { nanoid } from 'nanoid';
 
 // Define types locally to avoid import issues
 interface EntryPackage {
@@ -10,10 +11,8 @@ interface EntryPackage {
   quantity: number;
   cost: number;
   isActive: boolean;
-}
-
-interface Params {
-  id: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface EntryRequestData {
@@ -21,12 +20,18 @@ interface EntryRequestData {
   lastName: string;
   email: string;
   phone?: string;
-  dateOfBirth?: string | null;
-  packageId?: number | null;
+  dateOfBirth?: string;
   quantity?: number;
-  additionalEntries?: number;
+  packageId?: number;
   entrantId?: number;
+  additionalEntries?: number;
 }
+
+interface Params {
+  id: string;
+}
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/events/[id]/entries - Get all entries for an event
 export async function GET(req: NextRequest, context: { params: Params }) {
@@ -154,6 +159,7 @@ export async function POST(request: NextRequest, context: { params: Params }) {
     }
     
     const data = await request.json() as EntryRequestData;
+    console.log('Creating entry for event:', eventId, 'with data:', data);
     
     // Validate required fields
     if (!data.firstName || !data.lastName || !data.email) {
@@ -243,7 +249,7 @@ export async function POST(request: NextRequest, context: { params: Params }) {
         try {
           const entry = await db.entry.create({
             data: {
-              id: uuidv4(), // Each entry needs its own unique UUID
+              id: nanoid(), // Use nanoid instead of uuidv4
               ...baseEntryData,
               packageEntryNum: i + 1
             }
@@ -265,7 +271,7 @@ export async function POST(request: NextRequest, context: { params: Params }) {
         try {
           const entry = await db.entry.create({
             data: {
-              id: uuidv4(), // Generate a UUID for the entry
+              id: nanoid(), // Use nanoid instead of uuidv4
               eventId,
               entrantId: entrant.id,
               packageId: null // No package for additional entries
@@ -285,7 +291,7 @@ export async function POST(request: NextRequest, context: { params: Params }) {
         try {
           const entry = await db.entry.create({
             data: {
-              id: uuidv4(), // Generate a UUID for the entry
+              id: nanoid(), // Use nanoid instead of uuidv4
               ...baseEntryData
             }
           });

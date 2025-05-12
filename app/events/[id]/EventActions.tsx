@@ -98,24 +98,26 @@ export default function EventActions({ event }: EventActionsProps) {
             >
               {isLoading ? 'Closing entries...' : 'Close Entries'}
             </button>
-            <button
-              onClick={() => router.push(`/events/${event.id}/draw`)}
-              disabled={isLoading}
-              className="w-full btn-enhanced-secondary"
+            
+            <Link
+              href={`/events/${event.id}/tablet-capture`}
+              className="w-full btn-enhanced-blue flex items-center justify-center py-2 px-4 border border-blue-700 rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-600"
             >
-              {isLoading ? 'Performing draw...' : 'Perform Draw'}
-            </button>
+              Tablet Capture
+            </Link>
           </>
         )}
         
         {event.status === 'CLOSED' && (
-          <button
-            onClick={() => router.push(`/events/${event.id}/draw`)}
-            disabled={isLoading}
-            className="w-full btn-enhanced-primary"
-          >
-            {isLoading ? 'Performing draw...' : 'Start Draw'}
-          </button>
+          <>
+            <button
+              onClick={() => router.push(`/events/${event.id}/draw`)}
+              disabled={isLoading}
+              className="w-full btn-enhanced-primary"
+            >
+              {isLoading ? 'Performing draw...' : 'Start Draw'}
+            </button>
+          </>
         )}
         
         {event.status === 'DRAWN' && (

@@ -29,6 +29,7 @@
     "eslint-config-next": "13.4.19",
     "framer-motion": "^12.6.3",
     "jose": "^4.14.4",
+    "lodash": "^4.17.21",
     "next": "13.4.19",
     "nodemailer": "^6.10.0",
     "phoenix": "^1.7.21",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@prisma/client": "^5.10.2",
+    "@types/lodash": "^4.17.16",
     "@types/ws": "^8.18.1",
     "eslint": "^8.57.1",
     "postcss": "^8.4.38",
