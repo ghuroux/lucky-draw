@@ -650,16 +650,37 @@ export default function EventForm({ event }: EventFormProps) {
         <div className="mt-4 border-t pt-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-medium text-gray-900">Entry Packages</h3>
+            <button
+              type="button"
+              onClick={addPackage}
+              className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Package
+            </button>
           </div>
           <p className="text-sm text-gray-500 mb-3">
             Configure packages for multiple entries at different price points.
           </p>
-          
           <div className="space-y-3">
             {packages.map((pkg, index) => (
               <div key={index} className="p-3 border border-gray-200 rounded-md bg-gray-50">
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
-                  {/* Package Quantity */}
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium text-sm">Package #{index + 1}</h4>
+                  {packages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePackage(index)}
+                      className="text-red-600 hover:text-red-800 text-xs"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                  {/* # of Entries */}
                   <div className="form-field mb-0">
                     <label htmlFor={`pkg-quantity-${index}`} className="form-label text-xs">
                       # of Entries
@@ -673,7 +694,6 @@ export default function EventForm({ event }: EventFormProps) {
                       className="form-input py-2"
                     />
                   </div>
-                  
                   {/* Package Cost */}
                   <div className="form-field mb-0">
                     <label htmlFor={`pkg-cost-${index}`} className="form-label text-xs">
@@ -694,10 +714,9 @@ export default function EventForm({ event }: EventFormProps) {
                       />
                     </div>
                   </div>
-                  
-                  {/* Package Active */}
+                  {/* Active Checkbox */}
                   <div className="form-field mb-0 flex items-center">
-                    <div className="flex items-center h-full pt-6">
+                    <div className="flex items-center h-full pt-2">
                       <input
                         type="checkbox"
                         id={`pkg-active-${index}`}
@@ -710,9 +729,8 @@ export default function EventForm({ event }: EventFormProps) {
                       </label>
                     </div>
                   </div>
-                  
                   {/* Savings */}
-                  <div className="flex items-center h-full pt-6">
+                  <div className="flex items-center h-full pt-2">
                     {pkg.quantity > 1 && formData.entryCost && pkg.cost < (pkg.quantity * parseFloat(formData.entryCost)) ? (
                       <span className="text-xs font-medium text-green-600">
                         Save {formatCurrency((pkg.quantity * parseFloat(formData.entryCost)) - pkg.cost)}
