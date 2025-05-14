@@ -53,7 +53,7 @@ export default function EventForm({ event }: EventFormProps) {
     date: event?.date ? formatISO(new Date(event.date), { representation: 'date' }) : '',
     drawTime: event?.drawTime || '',
     entryCost: event?.entryCost !== undefined ? event.entryCost.toString() : '0',
-    prizePool: event?.prizePool !== undefined ? event.prizePool.toString() : '',
+    prizePool: event?.prizePool !== undefined && event?.prizePool !== null ? event.prizePool.toString() : '',
   });
 
   // Package state
@@ -102,7 +102,13 @@ export default function EventForm({ event }: EventFormProps) {
         
         if (data.length > 0) {
           console.log("Setting packages from API, count:", data.length);
-          setPackages(data);
+          // Ensure isActive is properly set as boolean
+          const formattedData = data.map(pkg => ({
+            ...pkg,
+            isActive: Boolean(pkg.isActive)
+          }));
+          console.log("Formatted packages with boolean isActive:", formattedData);
+          setPackages(formattedData);
         } else {
           console.log("No packages found, creating defaults");
           // If no packages yet, create default ones
@@ -350,13 +356,13 @@ export default function EventForm({ event }: EventFormProps) {
           // Ensure id is properly handled
           const id = pkg.id ? Number(pkg.id) : undefined;
           
-          console.log(`Package ${id || 'new'}: Quantity=${quantity}, Cost=${cost}, Active=${pkg.isActive}, ID type: ${typeof id}`);
+          console.log(`Package ${id || 'new'}: Quantity=${quantity}, Cost=${cost}, Active=${pkg.isActive}, Active type=${typeof pkg.isActive}, ID type: ${typeof id}`);
           
           return {
             id: id,
             quantity: quantity,
             cost: cost,
-            isActive: pkg.isActive === true // Ensure it's a boolean
+            isActive: Boolean(pkg.isActive) // Force to boolean
           };
         });
       
@@ -720,9 +726,12 @@ export default function EventForm({ event }: EventFormProps) {
                       <input
                         type="checkbox"
                         id={`pkg-active-${index}`}
-                        checked={pkg.isActive}
-                        onChange={(e) => handlePackageChange(index, 'isActive', e.target.checked)}
-                        className="form-checkbox"
+                        checked={Boolean(pkg.isActive)}
+                        onChange={(e) => {
+                          console.log(`Package ${index+1} active changed to:`, e.target.checked);
+                          handlePackageChange(index, 'isActive', e.target.checked);
+                        }}
+                        className="form-checkbox h-5 w-5"
                       />
                       <label htmlFor={`pkg-active-${index}`} className="ml-2 text-sm text-gray-700">
                         Active
