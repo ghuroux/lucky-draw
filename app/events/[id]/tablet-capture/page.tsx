@@ -53,7 +53,6 @@ export default function TabletCapturePage() {
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+27'); // Default to South Africa
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('1980-01-01');
   const [quantity, setQuantity] = useState(1);
   const [entryType, setEntryType] = useState('Regular Entry');
   const [additionalEntries, setAdditionalEntries] = useState(0);
@@ -221,7 +220,6 @@ export default function TabletCapturePage() {
         lastName, 
         email,
         phone: fullPhoneNumber,
-        dateOfBirth,
         quantity: selectedPackage 
           ? ((selectedPackage.entryCount || selectedPackage.quantity || 1) + additionalEntries) 
           : quantity,
@@ -261,7 +259,6 @@ export default function TabletCapturePage() {
       setPhoneNumber('');
     }
     
-    setDateOfBirth(entrant.dateOfBirth || '1980-01-01');
     setShowSearchResults(false);
   };
   
@@ -502,17 +499,6 @@ export default function TabletCapturePage() {
                         />
                       </div>
                       <p className="mt-1 text-xs text-gray-500">Example: For 073 123 4567, enter 73 123 4567</p>
-                    </div>
-                    <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
-                        Date of Birth
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                      />
                     </div>
                     <div className="group">
                       <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
