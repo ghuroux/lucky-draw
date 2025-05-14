@@ -52,7 +52,7 @@ export default function EventForm({ event }: EventFormProps) {
     description: event?.description || '',
     date: event?.date ? formatISO(new Date(event.date), { representation: 'date' }) : '',
     drawTime: event?.drawTime || '',
-    entryCost: event?.entryCost !== undefined ? event.entryCost.toString() : '0',
+    entryCost: event?.entryCost !== undefined ? event.entryCost.toString() : '',
     prizePool: event?.prizePool !== undefined && event?.prizePool !== null ? event.prizePool.toString() : '',
   });
 
@@ -79,9 +79,9 @@ export default function EventForm({ event }: EventFormProps) {
     } else {
       // Default packages for new events
       setPackages([
-        { quantity: 1, cost: 0, isActive: true },
-        { quantity: 5, cost: 0, isActive: false },
-        { quantity: 10, cost: 0, isActive: false }
+        { quantity: 1, cost: '', isActive: true },
+        { quantity: 5, cost: '', isActive: false },
+        { quantity: 10, cost: '', isActive: false }
       ]);
       // Default single empty prize
       setPrizes([{ name: '', description: '', order: 0 }]);
@@ -113,9 +113,9 @@ export default function EventForm({ event }: EventFormProps) {
           console.log("No packages found, creating defaults");
           // If no packages yet, create default ones
           const defaults = [
-            { quantity: 1, cost: event?.entryCost || 0, isActive: true },
-            { quantity: 5, cost: 0, isActive: false },
-            { quantity: 10, cost: 0, isActive: false }
+            { quantity: 1, cost: '', isActive: true },
+            { quantity: 5, cost: '', isActive: false },
+            { quantity: 10, cost: '', isActive: false }
           ];
           console.log("Default packages:", defaults);
           setPackages(defaults);
@@ -124,9 +124,9 @@ export default function EventForm({ event }: EventFormProps) {
         console.log("Packages API error, creating defaults");
         // If API error, create default ones
         const defaults = [
-          { quantity: 1, cost: event?.entryCost || 0, isActive: true },
-          { quantity: 5, cost: 0, isActive: false },
-          { quantity: 10, cost: 0, isActive: false }
+          { quantity: 1, cost: '', isActive: true },
+          { quantity: 5, cost: '', isActive: false },
+          { quantity: 10, cost: '', isActive: false }
         ];
         console.log("Default packages:", defaults);
         setPackages(defaults);
@@ -135,9 +135,9 @@ export default function EventForm({ event }: EventFormProps) {
       console.error("Error fetching packages:", error);
       // If error, create default ones
       const defaults = [
-        { quantity: 1, cost: event?.entryCost || 0, isActive: true },
-        { quantity: 5, cost: 0, isActive: false },
-        { quantity: 10, cost: 0, isActive: false }
+        { quantity: 1, cost: '', isActive: true },
+        { quantity: 5, cost: '', isActive: false },
+        { quantity: 10, cost: '', isActive: false }
       ];
       console.log("Default packages (after error):", defaults);
       setPackages(defaults);
@@ -213,9 +213,9 @@ export default function EventForm({ event }: EventFormProps) {
     
     // Special handling for entryCost to ensure it's a valid number
     if (name === 'entryCost') {
-      // Only allow numbers and decimal point
-      const isValidNumber = /^(\d*\.?\d*)$/.test(value);
-      if (value === '' || isValidNumber) {
+      // Only allow empty string or numbers and decimal point
+      const isValidNumber = value === '' || /^(\d*\.?\d*)$/.test(value);
+      if (isValidNumber) {
         setFormData(prev => ({
           ...prev,
           [name]: value
@@ -262,15 +262,21 @@ export default function EventForm({ event }: EventFormProps) {
       if (field === 'quantity' || field === 'cost') {
         // Only allow numbers and decimal point for cost
         if (field === 'cost') {
-          const isValidNumber = /^(\d*\.?\d*)$/.test(value);
-          if (value === '' || isValidNumber) {
+          // Allow empty string or valid numbers
+          const isValidNumber = value === '' || /^(\d*\.?\d*)$/.test(value);
+          if (isValidNumber) {
             updated[index] = { ...updated[index], [field]: value };
           }
         } else {
           // For quantity, only allow positive integers
           const isValidInt = /^\d*$/.test(value);
           if (value === '' || isValidInt) {
-            updated[index] = { ...updated[index], [field]: value };
+            // If value is empty, set to 1 (minimum quantity)
+            if (value === '') {
+              updated[index] = { ...updated[index], [field]: 1 };
+            } else {
+              updated[index] = { ...updated[index], [field]: value };
+            }
           }
         }
       } else {
@@ -305,7 +311,7 @@ export default function EventForm({ event }: EventFormProps) {
 
   const addPackage = () => {
     console.log("Adding new package - current packages:", packages.length);
-    const newPackage = { quantity: 1, cost: 0, isActive: false };
+    const newPackage = { quantity: 1, cost: '', isActive: false };
     console.log("New package:", newPackage);
     
     setPackages(prev => {
@@ -351,7 +357,7 @@ export default function EventForm({ event }: EventFormProps) {
         .map(pkg => {
           // Parse numeric values
           const quantity = parseInt(pkg.quantity.toString(), 10);
-          const cost = parseFloat(pkg.cost.toString()) || 0;
+          const cost = parseFloat(pkg.cost.toString()) || 0; // Convert empty string to 0
           
           // Ensure id is properly handled
           const id = pkg.id ? Number(pkg.id) : undefined;
@@ -544,13 +550,26 @@ export default function EventForm({ event }: EventFormProps) {
                   <span>R</span>
                 </div>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   step="0.01"
                   min="0"
                   id="entryCost"
                   name="entryCost"
                   value={formData.entryCost}
                   onChange={handleChange}
+                  onBlur={(e) => {
+                    // Ensure on blur that we have a valid number format for display
+                    if (e.target.value) {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        setFormData(prev => ({
+                          ...prev,
+                          entryCost: value.toString()
+                        }));
+                      }
+                    }
+                  }}
                   className={`form-input input-with-prefix ${errors.entryCost ? 'border-red-300' : ''}`}
                 />
               </div>
@@ -567,9 +586,8 @@ export default function EventForm({ event }: EventFormProps) {
                   <span>R</span>
                 </div>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   id="prizePool"
                   name="prizePool"
                   value={formData.prizePool}
@@ -710,12 +728,16 @@ export default function EventForm({ event }: EventFormProps) {
                         <span>R</span>
                       </div>
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         id={`pkg-cost-${index}`}
                         value={pkg.cost}
-                        onChange={(e) => handlePackageChange(index, 'cost', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => handlePackageChange(index, 'cost', e.target.value)}
+                        onBlur={(e) => {
+                          // Ensure on blur that we have a valid number format
+                          const value = parseFloat(e.target.value);
+                          handlePackageChange(index, 'cost', isNaN(value) ? 0 : value);
+                        }}
                         className="form-input input-with-prefix py-2"
                       />
                     </div>
