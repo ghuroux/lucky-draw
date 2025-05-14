@@ -71,6 +71,9 @@ export default function LiveDrawPage() {
   const [availableEntrants, setAvailableEntrants] = useState<LeaderboardEntry[]>([]);
   const [totalEntriesInPool, setTotalEntriesInPool] = useState<number>(0);
   
+  // Add a state to track which prizes have been locked (confirmed)
+  const [lockedPrizes, setLockedPrizes] = useState<number[]>([]);
+  
   // Fetch event data and leaderboard
   useEffect(() => {
     async function fetchData() {
@@ -328,7 +331,7 @@ export default function LiveDrawPage() {
   // Function to perform weighted random selection
   // Takes an array of items with a weight property and returns a randomly selected item
   // The higher the weight, the higher the probability of selection
-  const weightedRandomSelection = <T extends { weight: number }>(items: T[]): any => {
+  const weightedRandomSelection = <T extends { weight: number, entrant: Entrant }>(items: T[]): Entrant => {
     // Error handling
     if (!items || items.length === 0) {
       throw new Error("Cannot select from an empty array");
@@ -384,6 +387,9 @@ export default function LiveDrawPage() {
   
   // Move to the next prize after revealing the current winner
   const moveToNextPrize = () => {
+    // Lock the current prize so it can't be redrawn
+    setLockedPrizes([...lockedPrizes, currentPrizeIndex]);
+    
     if (currentPrizeIndex >= prizes.length - 1) {
       // We've completed all prizes
       setDrawComplete(true);
@@ -474,6 +480,45 @@ export default function LiveDrawPage() {
       console.error('Error sending winner email:', error);
       setEmailStatus(prev => ({ ...prev, [prizeIndex]: 'error' }));
     }
+  };
+  
+  // Add a function to redraw the current prize
+  const redrawCurrentPrize = () => {
+    if (currentPrizeIndex < 0 || currentPrizeIndex >= prizes.length) return;
+    
+    // Reset the current prize's winner
+    const updatedPrizes = [...prizes];
+    const currentPrize = updatedPrizes[currentPrizeIndex];
+    
+    // Only allow redraw if the prize hasn't been locked
+    if (lockedPrizes.includes(currentPrizeIndex)) {
+      alert("This winner has already been confirmed and cannot be redrawn.");
+      return;
+    }
+    
+    // Get the winner info before resetting
+    const currentWinner = currentPrize.winner;
+    
+    // Reset the winner
+    currentPrize.winner = null;
+    currentPrize.isDrawn = false;
+    setPrizes(updatedPrizes);
+    
+    // Remove the previous winner from drawnWinnerIds if they exist
+    if (drawnWinnerIds.length > 0) {
+      // Remove the last added winner ID since that corresponds to the current prize
+      setDrawnWinnerIds(prev => prev.slice(0, -1));
+    }
+    
+    // Reset the draw stage
+    setDrawStage('ready');
+    setIsRevealing(false);
+    setIsDrawing(false);
+    
+    // Draw a new winner
+    setTimeout(() => {
+      drawCurrentPrize();
+    }, 500);
   };
   
   if (isLoading) {
@@ -689,14 +734,27 @@ export default function LiveDrawPage() {
                                 )}
                               </div>
                               
-                              <button
-                                onClick={moveToNextPrize}
-                                className="mt-6 px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors font-bold"
-                              >
-                                {currentPrizeIndex < prizes.length - 1 
-                                  ? 'Continue to Next Prize' 
-                                  : 'Complete Draw'}
-                              </button>
+                              <div className="flex space-x-4 mt-6 justify-center">
+                                {/* Allow redraw if the winner isn't present */}
+                                <button
+                                  onClick={redrawCurrentPrize}
+                                  disabled={lockedPrizes.includes(currentPrizeIndex)}
+                                  className="px-6 py-3 bg-red-600 text-white rounded-md shadow hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold flex items-center"
+                                >
+                                  <ArrowPathIcon className="h-5 w-5 mr-2" />
+                                  Redraw
+                                </button>
+                                
+                                {/* Continue to next prize (this locks the current winner) */}
+                                <button
+                                  onClick={moveToNextPrize}
+                                  className="px-6 py-3 bg-yellow-600 text-white rounded-md shadow hover:bg-yellow-700 transition-colors font-bold"
+                                >
+                                  {currentPrizeIndex < prizes.length - 1 
+                                    ? 'Continue to Next Prize' 
+                                    : 'Complete Draw'}
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <p className="text-red-300 hidden">
