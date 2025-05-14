@@ -15,13 +15,13 @@ export default function TabletCaptureLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Tablet Capture</title>
       </head>
-      <body className="overflow-y-auto">
+      <body className="overflow-y-auto h-full dark:bg-gray-900">
         {children}
       </body>
     </html>

@@ -303,21 +303,21 @@ export default function TabletCapturePage() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Back button */}
       <button 
         onClick={() => router.push(`/events/${eventId}`)} 
-        className="absolute top-4 left-4 z-20 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition-colors duration-200"
+        className="absolute top-4 left-4 z-20 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition-colors duration-200 dark:bg-gray-700/80 dark:hover:bg-gray-700"
         aria-label="Back to event"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
       </button>
 
       <div className="relative overflow-hidden">
         {/* Banner with 3D effect */}
-        <div className="relative bg-blue-600 py-8 shadow-md transform skew-y-0 z-10">
+        <div className="relative bg-blue-600 py-8 shadow-md transform skew-y-0 z-10 dark:bg-blue-800">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 opacity-80"></div>
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1591491633081-115ca8788eff?q=80&w=1000')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
           <div className="absolute -bottom-4 left-0 right-0 h-16 bg-gradient-to-t from-blue-100 to-transparent opacity-20"></div>
@@ -345,8 +345,8 @@ export default function TabletCapturePage() {
         
           {/* Left Side: Find Entrant */}
           <div className="transform hover:-translate-y-1 transition-transform duration-300">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden dark:bg-gray-800">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 dark:from-blue-700 dark:to-blue-800">
                 <h2 className="text-xl font-bold text-white flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -361,13 +361,13 @@ export default function TabletCapturePage() {
                     <input
                       type="text"
                       placeholder="Search by name or email..."
-                      className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                      className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                       value={searchQuery}
                       onChange={handleSearchChange}
                     />
                     <button 
                       type="submit"
-                      className="absolute right-1 top-1 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="absolute right-1 top-1 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-700 dark:hover:bg-blue-800"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -385,15 +385,15 @@ export default function TabletCapturePage() {
                       Search Results ({searchResults.length})
                     </h3>
                     {searchResults.length > 0 ? (
-                      <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 shadow-inner bg-gray-50">
+                      <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 shadow-inner bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                         {searchResults.map((entrant) => (
                           <div 
                             key={entrant.id}
-                            className="p-4 border-b border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors"
+                            className="p-4 border-b border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors dark:border-gray-600 dark:hover:bg-gray-600"
                             onClick={() => handleSelectEntrant(entrant)}
                           >
-                            <div className="font-medium text-gray-800">{entrant.firstName} {entrant.lastName}</div>
-                            <div className="text-sm text-gray-600 flex items-center">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">{entrant.firstName} {entrant.lastName}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
@@ -403,9 +403,9 @@ export default function TabletCapturePage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                        <p className="text-gray-500">No results found</p>
-                        <p className="text-sm text-blue-600 mt-1">Create a new entry below</p>
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center dark:bg-gray-700 dark:border-gray-600">
+                        <p className="text-gray-500 dark:text-gray-400">No results found</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">Create a new entry below</p>
                       </div>
                     )}
                   </div>
@@ -416,8 +416,8 @@ export default function TabletCapturePage() {
           
           {/* Right Side: Add/Edit Entry */}
           <div className="transform hover:-translate-y-1 transition-transform duration-300">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden dark:bg-gray-800">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 dark:from-green-700 dark:to-green-800">
                 <h2 className="text-xl font-bold text-white flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -430,43 +430,43 @@ export default function TabletCapturePage() {
                 <form onSubmit={handleSubmit}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                     <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                         First Name *
                       </label>
                       <input
                         type="text"
                         required
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                       />
                     </div>
                     <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                         Last Name *
                       </label>
                       <input
                         type="text"
                         required
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                       />
                     </div>
                     <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                         Email *
                       </label>
                       <input
                         type="email"
                         required
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
                     <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors flex items-center">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
@@ -475,7 +475,7 @@ export default function TabletCapturePage() {
                       <div className="flex shadow-sm rounded-lg overflow-hidden group-hover:shadow transition-shadow">
                         <div className="relative w-[100px]">
                           <select
-                            className="h-full w-full appearance-none p-3 pl-3 pr-8 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                            className="h-full w-full appearance-none p-3 pl-3 pr-8 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                             value={countryCode}
                             onChange={(e) => setCountryCode(e.target.value)}
                           >
@@ -493,20 +493,20 @@ export default function TabletCapturePage() {
                         </div>
                         <input
                           type="tel"
-                          className="flex-1 p-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                          className="flex-1 p-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                           placeholder="Phone number (without leading zero)"
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
                         />
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">Example: For 073 123 4567, enter 73 123 4567</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Example: For 073 123 4567, enter 73 123 4567</p>
                     </div>
                     <div className="group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                         Entry Type
                       </label>
                       <select
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                         value={entryType}
                         onChange={(e) => setEntryType(e.target.value)}
                       >
@@ -521,13 +521,13 @@ export default function TabletCapturePage() {
                     
                     {selectedPackage ? (
                       <div className="md:col-span-2 group">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                           Additional Entries
                         </label>
                         <div className="flex shadow-sm rounded-lg overflow-hidden group-hover:shadow transition-shadow">
                           <button
                             type="button"
-                            className="p-3 border border-gray-300 rounded-l-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors"
+                            className="p-3 border border-gray-300 rounded-l-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
                             onClick={() => setAdditionalEntries(Math.max(0, additionalEntries - 1))}
                           >
                             -
@@ -535,31 +535,31 @@ export default function TabletCapturePage() {
                           <input
                             type="number"
                             min="0"
-                            className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                            className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                             value={additionalEntries}
                             onChange={(e) => setAdditionalEntries(parseInt(e.target.value) || 0)}
                           />
                           <button
                             type="button"
-                            className="p-3 border border-gray-300 rounded-r-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors"
+                            className="p-3 border border-gray-300 rounded-r-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
                             onClick={() => setAdditionalEntries(additionalEntries + 1)}
                           >
                             +
                           </button>
                         </div>
-                        <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-700 transition-colors">
+                        <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-700 transition-colors dark:text-gray-400 dark:group-hover:text-gray-300">
                           Add extra entries at {formatCurrency(pricePerEntry)} each
                         </p>
                       </div>
                     ) : (
                       <div className="group">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 group-hover:text-blue-600 transition-colors">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-blue-600 transition-colors">
                           Quantity
                         </label>
                         <div className="flex shadow-sm rounded-lg overflow-hidden group-hover:shadow transition-shadow">
                           <button
                             type="button"
-                            className="p-3 border border-gray-300 rounded-l-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors"
+                            className="p-3 border border-gray-300 rounded-l-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
                           >
                             -
@@ -567,13 +567,13 @@ export default function TabletCapturePage() {
                           <input
                             type="number"
                             min="1"
-                            className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all"
+                            className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all dark:bg-gray-800 dark:border-gray-600 dark:text-white text-gray-900"
                             value={quantity}
                             onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                           />
                           <button
                             type="button"
-                            className="p-3 border border-gray-300 rounded-r-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors"
+                            className="p-3 border border-gray-300 rounded-r-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-bold transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
                             onClick={() => setQuantity(quantity + 1)}
                           >
                             +
@@ -584,18 +584,18 @@ export default function TabletCapturePage() {
                   </div>
                   
                   {/* Price Box with 3D Effect */}
-                  <div className="mt-8 mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-1 shadow-lg transform hover:scale-105 transition-transform duration-300">
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="mt-8 mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-1 shadow-lg transform hover:scale-105 transition-transform duration-300 dark:from-blue-900 dark:to-blue-800">
+                    <div className="bg-white rounded-lg p-4 border border-blue-200 dark:bg-gray-800 dark:border-blue-700">
                       <div className="text-center">
-                        <div className="text-xl font-bold text-blue-800 mb-1">
+                        <div className="text-xl font-bold text-blue-800 dark:text-blue-300 mb-1">
                           Total Cost:
                         </div>
-                        <div className="text-3xl font-extrabold text-blue-600">
+                        <div className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                           {formatCurrency(calculateTotal())}
                         </div>
                         
                         {selectedPackage && (
-                          <div className="mt-3 px-4 py-2 bg-blue-50 rounded-md text-sm text-gray-600">
+                          <div className="mt-3 px-4 py-2 bg-blue-50 rounded-md text-sm text-gray-600 dark:bg-blue-900/30 dark:text-gray-300">
                             <div className="font-medium">{selectedPackage.name || `${selectedPackage.quantity} Entries Package`}: {formatCurrency(selectedPackage.price || selectedPackage.cost)}</div>
                             {additionalEntries > 0 && (
                               <div className="mt-1">Additional entries: {additionalEntries} × {formatCurrency(pricePerEntry)} = {formatCurrency(additionalEntries * pricePerEntry)}</div>
@@ -608,7 +608,7 @@ export default function TabletCapturePage() {
                   
                   <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 text-lg font-semibold rounded-xl shadow-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-150"
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 text-lg font-semibold rounded-xl shadow-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-150 dark:from-green-600 dark:to-green-700 dark:hover:from-green-700 dark:hover:to-green-800"
                   >
                     <div className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
