@@ -230,39 +230,18 @@ export default function TabletCapturePage() {
         additionalEntries: additionalEntries > 0 ? additionalEntries : undefined
       };
       
-      console.log('Submitting entry:', entryData);
+      console.log('Entry data prepared:', entryData);
       
-      const response = await fetch(`/api/events/${eventId}/entries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(entryData),
-      });
+      // Calculate the total amount
+      const totalAmount = calculateTotal();
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to add entry: ${errorData.error || response.statusText}`);
-      }
-      
-      // Reset form after successful submission
-      setFirstName('');
-      setLastName('');
-      setEmail('');
-      setCountryCode('+27');
-      setPhoneNumber('');
-      setDateOfBirth('1980-01-01');
-      setQuantity(1);
-      setAdditionalEntries(0);
-      setEntryType('Regular Entry');
-      setSelectedPackage(null);
-      
-      // Show success message or feedback
-      alert('Entry added successfully!');
+      // Instead of sending the data directly, redirect to payment handover page
+      const encodedEntryData = encodeURIComponent(JSON.stringify(entryData));
+      router.push(`/events/${eventId}/tablet-capture/payment-handover?eventId=${eventId}&entryData=${encodedEntryData}&amount=${totalAmount}`);
       
     } catch (err) {
-      console.error('Error adding entry:', err);
-      alert(`Failed to add entry: ${err.message}`);
+      console.error('Error preparing entry data:', err);
+      alert(`Failed to process entry: ${err.message}`);
     }
   };
   
@@ -648,7 +627,7 @@ export default function TabletCapturePage() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      Paid & Add Entry
+                      Pay
                     </div>
                   </button>
                 </form>
