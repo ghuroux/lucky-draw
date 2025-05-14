@@ -247,7 +247,8 @@ export default function TabletCapturePage() {
   const handleSelectEntrant = (entrant) => {
     setFirstName(entrant.firstName);
     setLastName(entrant.lastName);
-    setEmail(entrant.email);
+    // Don't set email from entrant data as these might be fake/placeholder values
+    // Keep the current email field value or leave it empty for user input
     
     // Parse the phone number if it exists
     if (entrant.phone) {
